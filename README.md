@@ -30,18 +30,39 @@ npm run test:coverage
 
 Kamera hanya bisa diakses dari `localhost` atau HTTPS.
 
-## Struktur
+## Struktur repo
+
+Detail & konvensi: [`docs/PLAN.md` §4](docs/PLAN.md).
 
 ```
-src/
-  core/            # logika murni, tanpa DOM, dan semuanya di-unit-test
-    angles.js      # perhitungan sudut
-    exercises.js   # konfigurasi latihan & threshold
-    pose.js        # landmark → sudut + peringatan form
-    repCounter.js  # state machine penghitung (immutable)
-  config.js        # URL model & library
-  main.js          # UI: kamera/video, render, loop
-tests/
+app/        # 🌐 web app yang di-deploy (index.html, src/core|adapters|ui, tests/)
+ml/         # 🧠 paket Python `repcount`: ekstraksi keypoint, split, (nanti) training & evaluasi
+tools/      # 🛠️ alat bantu developer (labeler, evaluasi Node, benchmark)
+labels/     # ✍️ label buatan manusia
+reports/    # 📊 hasil evaluasi, nomor = tahap (00-data/, …)
+docs/       # 📚 PLAN.md & prompt per tahap
+data/       # 💾 dataset & turunan — di-.gitignore, tidak pernah di-commit
+```
+
+## Pipeline data (Tahap 0)
+
+Butuh Python 3.11. Semua data ada di `data/` (override: env `FITNESS_DATA_DIR`).
+
+```bash
+python -m venv .venv && source .venv/Scripts/activate   # Windows Git Bash; Linux/macOS: .venv/bin/activate
+pip install -e "ml[dev]"
+
+# dataset (sekali saja, ±4,6 GB)
+kaggle datasets download ziya07/workout-and-exercise-video-dataset -p data/workout-videos --unzip
+
+python -m repcount.data.download_model        # pose_landmarker_lite.task → data/pose_models/
+python -m repcount.data.manifest              # → data/keypoints/manifest.csv
+python -m repcount.data.dedup                 # group_id near-duplicate → manifest.csv
+python -m repcount.data.extract               # → data/keypoints/<kelas>/<video_id>.npz (resumable, --workers N)
+python -m repcount.evaluation.pose_quality    # → reports/00-data/pose_quality.md/.csv
+python -m repcount.data.split                 # → ml/splits/split_v1.json + reports/00-data/split.md
+
+pytest ml/tests --cov=repcount && ruff check ml
 ```
 
 ## Roadmap

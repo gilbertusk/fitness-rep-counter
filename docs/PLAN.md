@@ -155,7 +155,7 @@ Aturan kerapian:
 
 | # | Tahap | Prompt | Output utama | Status |
 |---|---|---|---|---|
-| 0 | Setup & ekstraksi keypoint | `prompts/00-setup-and-extraction.md` | keypoint `.npz`, manifest, laporan kualitas pose, split | ☐ |
+| 0 | Setup & ekstraksi keypoint | `prompts/00-setup-and-extraction.md` | keypoint `.npz`, manifest, laporan kualitas pose, split | ✅ |
 | 1 | Pengenal latihan (22 kelas) | `prompts/01-exercise-classifier.md` | model ONNX, laporan evaluasi, parity test fitur | ☐ |
 | 2 | Label repetisi (manusia + alat) | `prompts/02-rep-labeling.md` | alat labeling, `labels/rep_labels.csv` | ☐ |
 | 3 | Penghitung repetisi generik | `prompts/03-generic-rep-counter.md` | `genericCounter.js`, laporan MAE/OBO vs baseline | ☐ |
@@ -187,3 +187,27 @@ Urutan wajib: 0 → 1 → (2 bisa paralel dengan 1) → 3 → 4 → 5.
 ## 8. Log keputusan
 
 _(Diisi setiap akhir tahap: tanggal, keputusan, alasan, angka penting.)_
+
+### 2026-09-28 — Tahap 0: setup & ekstraksi keypoint
+
+- **Dataset:** 652 video terpindai, 651 berhasil diekstrak. Gagal: `decline bench press/dbp_4.MOV`
+  (89 MB, `moov atom not found` → file rusak/terpotong), tercatat di `manifest.csv` & `errors.csv`.
+- **Ekstraksi:** `pose_landmarker_lite` float16 v1 (URL sama dengan `app/src/config.js`), mode VIDEO,
+  `num_poses=1`, confidence 0,5 (default MediaPipe = yang dipakai web app), maks 30 fps, sisi terpanjang 640 px.
+  Ekstraksi penuh 646 video: **2949 s (±49 menit)**, 6 worker di CPU (5 video uji `--limit 5`: 23 s).
+  Sebagian waktu itu CPU juga dipakai proses dedup, jadi angka ini batas atas.
+- **Near-duplicate:** dHash 64-bit pada frame 10/50/90%, **ambang 10** (bukan 6). Alasan: mulai 6, lalu
+  sampel pasangan di rentang 6–10 dicek visual → semuanya orang & tempat yang sama (potongan dari video
+  sumber yang sama); pasangan beda kelas pertama muncul di ambang 12. Pita hitam (letterbox) dipotong
+  dulu karena sempat membuat klip vertikal beda kelas terlihat mirip. Hasil: **70 grup** berisi >1 video
+  (**184 video**), grup terbesar 11 video; 538 grup total. Sensitivitas (video dalam grup >1):
+  ambang 6 → 123, 8 → 160, 10 → 184, 12 → 196.
+- **Split v1:** 70/15/15 per kelas berdasarkan `group_id`, seed 42 → train 453 / val 99 / test 99.
+  Pengecualian: plank hanya 7 video (5/1/1).
+- **Kualitas pose:** 97,7% frame terdeteksi. Terburuk decline_bench_press 87,6%, romanian_deadlift 88,3%,
+  bench_press 91,7%. 8 video deteksi < 50% (bench_press 4, lat_pulldown 2, leg_extension 2); 3 video tanpa
+  pose sama sekali (lat_pulldown_25, lat_pulldown_6: close-up punggung; leg_extension_14: hanya kaki).
+  Pergelangan kaki paling sering tak terlihat (visibility rata-rata 0,49).
+- **Kelas bermasalah (menunggu keputusan):** plank (7 video), decline_bench_press (11 video, 1 rusak),
+  3 video tanpa pose.
+
