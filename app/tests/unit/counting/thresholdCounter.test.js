@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createCounter, updateCounter, PHASE, FEEDBACK } from '../src/core/repCounter.js';
+import { createCounter, updateCounter, PHASE, FEEDBACK } from '../../../src/core/counting/thresholdCounter.js';
 
 const CONFIG = { downAngle: 90, upAngle: 160, partialAngle: 130 };
 const run = (angles) => angles.reduce((state, angle) => updateCounter(state, angle, CONFIG), createCounter());

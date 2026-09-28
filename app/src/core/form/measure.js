@@ -1,4 +1,4 @@
-import { calculateAngle, angleFromVertical } from './angles.js';
+import { calculateAngle, angleFromVertical } from '../geometry/angles.js';
 
 const MIN_VISIBILITY = 0.5;
 

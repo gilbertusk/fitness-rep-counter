@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "description": "Penghitung repetisi & koreksi form olahraga real-time di browser (MediaPipe Pose)",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "start": "npx --yes serve -l 5173 .",
-    "test": "node --test",
-    "test:coverage": "node --test --experimental-test-coverage"
+    "start": "npx --yes serve -l 5173 app",
+    "test": "node --test \"app/tests/unit/**/*.test.js\" \"tools/**/*.test.js\"",
+    "test:coverage": "node --test --experimental-test-coverage \"app/tests/unit/**/*.test.js\" \"tools/**/*.test.js\""
   },
   "license": "MIT"
 }

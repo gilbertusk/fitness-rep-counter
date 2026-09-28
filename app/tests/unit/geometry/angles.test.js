@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateAngle, angleFromVertical } from '../src/core/angles.js';
+import { calculateAngle, angleFromVertical } from '../../../src/core/geometry/angles.js';
 
 const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 0.01, `${actual} ≉ ${expected}`);
 

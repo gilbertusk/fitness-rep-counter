@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { measureExercise } from '../src/core/pose.js';
-import { EXERCISES } from '../src/core/exercises.js';
+import { measureExercise } from '../../../src/core/form/measure.js';
+import { EXERCISES } from '../../../src/core/exercises.js';
 
 const FRAME = { width: 100, height: 100 };
 
