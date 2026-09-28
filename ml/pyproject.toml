@@ -20,6 +20,18 @@ dev = [
     "pytest-cov==7.1.0",
     "ruff==0.16.9",
 ]
+# Stage 1: classifier training, evaluation and ONNX export.
+# CPU wheels are enough — the models are small and the dataset fits in memory.
+#   pip install -e "ml[dev,train]" --extra-index-url https://download.pytorch.org/whl/cpu
+train = [
+    "scikit-learn==1.9.1",
+    "torch==2.14.0",
+    "onnx==1.23.0",
+    "onnxscript==0.6.2",  # required by torch.onnx.export since torch 2.9
+    # Keep in step with ONNXRUNTIME_VERSION in app/src/config.js so export and browser agree.
+    "onnxruntime==1.23.2",
+    "matplotlib==3.11.2",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
