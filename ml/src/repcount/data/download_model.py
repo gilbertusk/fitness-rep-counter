@@ -1,6 +1,6 @@
 """Download the MediaPipe pose model used by the web app.
 
-    python -m repcount.data.download_model [--overwrite]
+python -m repcount.data.download_model [--overwrite]
 """
 
 import argparse

@@ -33,8 +33,9 @@ JOINT_NAMES_ID = {
 LEFT = [left for left, _ in JOINT_GROUPS.values()]
 RIGHT = [right for _, right in JOINT_GROUPS.values()]
 SIDE_MARGIN = 0.05  # mean visibility difference below this counts as "seimbang"
-LOW_DETECTION = 0.80
-LOW_VISIBILITY = 0.50
+SIDE_NAMES_ID = {"left": "kiri", "right": "kanan", "balanced": "seimbang"}
+LOW_DETECTION = 0.80  # class-level warning
+LOW_VIDEO_DETECTION = 0.50  # video-level warning
 
 
 def dominant_side(left_vis: float, right_vis: float, margin: float = SIDE_MARGIN) -> str:
@@ -64,8 +65,8 @@ def video_quality(landmarks: np.ndarray) -> dict:
 def side_summary(sides: pd.Series) -> str:
     counts = sides[sides != "unknown"].value_counts()
     if counts.empty:
-        return "unknown"
-    return f"{counts.index[0]} ({counts.iloc[0] / counts.sum():.0%})"
+        return "-"
+    return f"{SIDE_NAMES_ID[counts.index[0]]} ({counts.iloc[0] / counts.sum():.0%})"
 
 
 def aggregate_by_class(videos: pd.DataFrame) -> pd.DataFrame:
@@ -99,11 +100,14 @@ def findings(table: pd.DataFrame, videos: pd.DataFrame) -> list[str]:
     weakest = joint_means.idxmin()
     weak_classes = table.nsmallest(3, weakest)["label"].tolist()
     no_pose = videos[videos["n_detected"] == 0]["video_id"].tolist()
+    weak_videos = videos[videos["n_detected"] < LOW_VIDEO_DETECTION * videos["n_frames"]]
     side_counts = videos["side"].value_counts(normalize=True)
     return [
         f"Pose terdeteksi pada {overall:.1f}% dari seluruh frame. Terburuk: **{worst['label']}** "
         f"({worst['detected_pct']:.1f}%), terbaik: **{best['label']}** ({best['detected_pct']:.1f}%).",
-        f"Kelas dengan deteksi < {LOW_DETECTION:.0%}: {', '.join(low) if low else 'tidak ada'}.",
+        f"Kelas dengan deteksi < {LOW_DETECTION:.0%}: {', '.join(low) if low else 'tidak ada'}; "
+        f"namun {len(weak_videos)} video punya deteksi < {LOW_VIDEO_DETECTION:.0%} "
+        f"({', '.join(f'{k} {v}' for k, v in weak_videos['label'].value_counts().items()) or '-'}).",
         f"Kelompok sendi dengan visibility rata-rata terendah: **{JOINT_NAMES_ID[weakest.removeprefix('vis_')]}** "
         f"({joint_means[weakest]:.2f}); paling rendah pada {', '.join(weak_classes)}.",
         f"Sisi tubuh dominan per video: kiri {side_counts.get('left', 0):.0%}, kanan "

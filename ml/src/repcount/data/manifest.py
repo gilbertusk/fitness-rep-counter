@@ -1,6 +1,6 @@
 """Scan the raw dataset and write KEYPOINTS_DIR/manifest.csv.
 
-    python -m repcount.data.manifest
+python -m repcount.data.manifest
 """
 
 import argparse
@@ -13,8 +13,17 @@ import pandas as pd
 from repcount.config import MANIFEST_PATH, VIDEO_EXTENSIONS, VIDEOS_DIR
 
 MANIFEST_COLUMNS = [
-    "video_id", "label", "path", "ext", "fps", "n_frames", "duration_s",
-    "width", "height", "size_bytes", "error",
+    "video_id",
+    "label",
+    "path",
+    "ext",
+    "fps",
+    "n_frames",
+    "duration_s",
+    "width",
+    "height",
+    "size_bytes",
+    "error",
 ]
 
 
@@ -56,8 +65,15 @@ def probe_video(path: Path) -> dict:
     """Read container metadata with OpenCV. Never raises: failures go to the `error` field."""
     import cv2
 
-    info = {"fps": None, "n_frames": None, "duration_s": None, "width": None, "height": None,
-            "size_bytes": path.stat().st_size if path.exists() else None, "error": ""}
+    info = {
+        "fps": None,
+        "n_frames": None,
+        "duration_s": None,
+        "width": None,
+        "height": None,
+        "size_bytes": path.stat().st_size if path.exists() else None,
+        "error": "",
+    }
     cap = cv2.VideoCapture(str(path))
     try:
         if not cap.isOpened():

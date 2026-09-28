@@ -42,8 +42,8 @@ def test_dominant_side(left, right, side):
 
 
 def test_side_summary_reports_majority_share():
-    assert side_summary(pd.Series(["left", "left", "right", "unknown"])) == "left (67%)"
-    assert side_summary(pd.Series(["unknown"])) == "unknown"
+    assert side_summary(pd.Series(["left", "left", "right", "unknown"])) == "kiri (67%)"
+    assert side_summary(pd.Series(["unknown"])) == "-"
 
 
 def per_video_rows() -> pd.DataFrame:
@@ -65,7 +65,7 @@ def test_aggregate_by_class_sorts_worst_first_and_weights_by_frames():
     assert bench["detected_pct"] == pytest.approx(10.0)
     assert squat["detected_pct"] == pytest.approx(100.0)
     assert squat["vis_knee"] == pytest.approx((30 * 0.9 + 10 * 0.5) / 40)
-    assert bench["n_videos"] == 2 and bench["side"] == "left (100%)"
+    assert bench["n_videos"] == 2 and bench["side"] == "kiri (100%)"
 
 
 def test_findings_and_markdown_mention_worst_class():
@@ -75,6 +75,7 @@ def test_findings_and_markdown_mention_worst_class():
     md = render_markdown(table, videos, n_missing=1)
     assert 3 <= len(notes) <= 5
     assert "**bench** (10.0%)" in notes[0] and "b2" in notes[-1]
+    assert "2 video punya deteksi < 50% (bench 2)" in notes[1]
     assert md.index("| bench |") < md.index("| squat |")
 
 

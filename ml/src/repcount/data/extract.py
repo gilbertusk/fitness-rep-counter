@@ -52,8 +52,10 @@ def timestamp_ms(index: int, src_fps: float) -> int:
 def pose_to_arrays(result) -> tuple[np.ndarray, np.ndarray]:
     """First pose of a PoseLandmarkerResult → (33, 4) landmarks and (33, 3) world landmarks, NaN if none."""
     if not result.pose_landmarks:
-        return (np.full((config.N_LANDMARKS, 4), np.nan, np.float32),
-                np.full((config.N_LANDMARKS, 3), np.nan, np.float32))
+        return (
+            np.full((config.N_LANDMARKS, 4), np.nan, np.float32),
+            np.full((config.N_LANDMARKS, 3), np.nan, np.float32),
+        )
     landmarks = np.array([[p.x, p.y, p.z, p.visibility] for p in result.pose_landmarks[0]], np.float32)
     world = np.array([[p.x, p.y, p.z] for p in result.pose_world_landmarks[0]], np.float32)
     return landmarks, world
@@ -110,8 +112,10 @@ def extract_video(video_path: Path, model_path: Path) -> dict:
                 if not keep_frame(index, src_fps, config.MAX_FPS):
                     continue
                 size = size or (frame.shape[1], frame.shape[0])
-                rgb = cv2.cvtColor(cv2.resize(frame, resize_dims(*size, config.MAX_SIDE_PX),
-                                              interpolation=cv2.INTER_AREA), cv2.COLOR_BGR2RGB)
+                rgb = cv2.cvtColor(
+                    cv2.resize(frame, resize_dims(*size, config.MAX_SIDE_PX), interpolation=cv2.INTER_AREA),
+                    cv2.COLOR_BGR2RGB,
+                )
                 image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
                 stamp = timestamp_ms(index, src_fps)
                 lm, wl = pose_to_arrays(landmarker.detect_for_video(image, stamp))
@@ -149,11 +153,22 @@ def process_one(row: dict, videos_dir: str, keypoints_dir: str, model_path: str)
     try:
         arrays = extract_video(Path(videos_dir) / row["path"], Path(model_path))
         save_npz(out, {**arrays, "label": np.str_(row["label"]), "video_id": np.str_(row["video_id"])})
-        return {**row, "ok": True, "n_frames": len(arrays["timestamps_ms"]),
-                "seconds": time.perf_counter() - start, "error": ""}
+        return {
+            **row,
+            "ok": True,
+            "n_frames": len(arrays["timestamps_ms"]),
+            "seconds": time.perf_counter() - start,
+            "error": "",
+        }
     except Exception as exc:  # noqa: BLE001 - one bad video must not stop the batch
-        return {**row, "ok": False, "n_frames": 0, "seconds": time.perf_counter() - start,
-                "error": f"{type(exc).__name__}: {exc}", "traceback": traceback.format_exc()}
+        return {
+            **row,
+            "ok": False,
+            "n_frames": 0,
+            "seconds": time.perf_counter() - start,
+            "error": f"{type(exc).__name__}: {exc}",
+            "traceback": traceback.format_exc(),
+        }
 
 
 # ---------------------------------------------------------------- CLI
@@ -172,7 +187,8 @@ def write_errors(results: list[dict], errors_path: Path) -> int:
     retried = {r["video_id"] for r in results}
     kept = previous[~previous["video_id"].isin(retried)] if len(previous) else previous
     pd.concat([kept, pd.DataFrame(failed, columns=["video_id", "label", "path", "error"])]).to_csv(
-        errors_path, index=False)
+        errors_path, index=False
+    )
     return len(failed)
 
 
@@ -184,8 +200,11 @@ def run(rows: list[dict], workers: int, videos_dir: Path, keypoints_dir: Path, m
             r = future.result()
             results.append(r)
             status = f"{r['n_frames']} frames" if r["ok"] else f"ERROR {r['error']}"
-            print(f"[{done}/{len(rows)}] {time.perf_counter() - start:7.1f}s  {r['video_id']}: "
-                  f"{status} ({r['seconds']:.1f}s)", flush=True)
+            print(
+                f"[{done}/{len(rows)}] {time.perf_counter() - start:7.1f}s  {r['video_id']}: "
+                f"{status} ({r['seconds']:.1f}s)",
+                flush=True,
+            )
     return results
 
 
@@ -207,8 +226,10 @@ def main() -> None:
     results = run(rows, args.workers, config.VIDEOS_DIR, config.KEYPOINTS_DIR, model_path)
     n_failed = write_errors(results, config.ERRORS_PATH)
     total = sum(1 for _ in config.KEYPOINTS_DIR.glob("*/*.npz"))
-    print(f"Done in {time.perf_counter() - start:.1f}s: {len(results) - n_failed} ok, {n_failed} failed "
-          f"(see {config.ERRORS_PATH}). {total} .npz files in total.")
+    print(
+        f"Done in {time.perf_counter() - start:.1f}s: {len(results) - n_failed} ok, {n_failed} failed "
+        f"(see {config.ERRORS_PATH}). {total} .npz files in total."
+    )
 
 
 if __name__ == "__main__":

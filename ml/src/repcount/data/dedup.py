@@ -3,7 +3,11 @@
 Each video is fingerprinted by the dHash of the frames at 10%, 50% and 90% of its duration
 (dark letterbox bars cropped first).
 Two videos are near-duplicates when the mean Hamming distance over those three frames is
-<= --threshold (default 6 of 64 bits). Near-duplicates share a `group_id`, written to the manifest.
+<= --threshold (default 10 of 64 bits). Near-duplicates share a `group_id`, written to the manifest.
+
+Threshold choice (docs/PLAN.md §8): started at 6; spot checks of pairs at 6-10 all showed the same
+person and scene (clips cut from one source video), and no cross-class pair appears up to 10.
+The first cross-class pair appears at 12, so 10 is the largest threshold without obvious false positives.
 
     python -m repcount.data.dedup [--threshold 6]
 """
@@ -17,7 +21,7 @@ import pandas as pd
 
 from repcount.config import MANIFEST_PATH, VIDEOS_DIR
 
-DEFAULT_THRESHOLD = 6.0
+DEFAULT_THRESHOLD = 10.0
 SAMPLE_POSITIONS = (0.1, 0.5, 0.9)
 HASH_SIZE = 8  # 8x8 comparisons → 64 bits
 BORDER_LEVEL = 16  # rows/cols whose brightest pixel is below this are letterbox bars
@@ -30,7 +34,7 @@ def crop_borders(gray: np.ndarray, level: int = BORDER_LEVEL) -> np.ndarray:
     cols = np.flatnonzero(gray.max(axis=0) >= level)
     if rows.size == 0 or cols.size == 0:
         return gray
-    return gray[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+    return gray[rows[0] : rows[-1] + 1, cols[0] : cols[-1] + 1]
 
 
 def dhash(gray: np.ndarray) -> int:
@@ -136,8 +140,10 @@ def main() -> None:
     updated.to_csv(args.manifest, index=False)
 
     sizes = updated["group_id"].value_counts()
-    print(f"threshold={args.threshold}: {len(pairs)} duplicate pairs, {int((sizes > 1).sum())} groups with >1 video, "
-          f"{int(sizes[sizes > 1].sum())} videos in them, {updated['group_id'].nunique()} groups total")
+    print(
+        f"threshold={args.threshold}: {len(pairs)} duplicate pairs, {int((sizes > 1).sum())} groups with >1 video, "
+        f"{int(sizes[sizes > 1].sum())} videos in them, {updated['group_id'].nunique()} groups total"
+    )
     print("videos in multi-video groups per threshold:", sensitivity)
     for i, j, d in pairs:
         print(f"  {d:5.2f}  {updated.at[i, 'path']}  <->  {updated.at[j, 'path']}")

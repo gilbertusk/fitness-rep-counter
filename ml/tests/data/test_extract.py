@@ -81,8 +81,13 @@ def test_select_pending_skips_existing_outputs_unless_overwrite(tmp_path):
 def test_write_errors_replaces_rows_of_retried_videos(tmp_path):
     path = tmp_path / "errors.csv"
     base = {"label": "a", "path": "p"}
-    write_errors([{**base, "video_id": "a_1", "ok": False, "error": "boom"},
-                  {**base, "video_id": "a_2", "ok": False, "error": "bad"}], path)
+    write_errors(
+        [
+            {**base, "video_id": "a_1", "ok": False, "error": "boom"},
+            {**base, "video_id": "a_2", "ok": False, "error": "bad"},
+        ],
+        path,
+    )
 
     n_failed = write_errors([{**base, "video_id": "a_1", "ok": True, "error": ""}], path)
 

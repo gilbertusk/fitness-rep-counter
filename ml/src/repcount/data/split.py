@@ -77,8 +77,10 @@ def exceptions(counts: pd.DataFrame) -> list[str]:
     notes = []
     for label, row in counts.iterrows():
         if row["total"] < SMALL_CLASS:
-            notes.append(f"{label}: hanya {row['total']} video (< {SMALL_CLASS}); "
-                         f"train/val/test = {row['train']}/{row['val']}/{row['test']}")
+            notes.append(
+                f"{label}: hanya {row['total']} video (< {SMALL_CLASS}); "
+                f"train/val/test = {row['train']}/{row['val']}/{row['test']}"
+            )
         if row["val"] == 0 or row["test"] == 0:
             notes.append(f"{label}: val atau test kosong")
     return notes
@@ -89,7 +91,10 @@ def exceptions(counts: pd.DataFrame) -> list[str]:
 
 def load_videos(manifest_path: Path, keypoints_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     manifest = pd.read_csv(manifest_path, keep_default_na=False)
-    has_npz = [output_path(keypoints_dir, lbl, vid).exists() for lbl, vid in zip(manifest["label"], manifest["video_id"], strict=True)]
+    has_npz = [
+        output_path(keypoints_dir, lbl, vid).exists()
+        for lbl, vid in zip(manifest["label"], manifest["video_id"], strict=True)
+    ]
     return manifest[has_npz].reset_index(drop=True), manifest[[not h for h in has_npz]].reset_index(drop=True)
 
 
