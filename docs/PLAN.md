@@ -156,7 +156,7 @@ Aturan kerapian:
 | # | Tahap | Prompt | Output utama | Status |
 |---|---|---|---|---|
 | 0 | Setup & ekstraksi keypoint | `prompts/00-setup-and-extraction.md` | keypoint `.npz`, manifest, laporan kualitas pose, split | ✅ |
-| 1 | Pengenal latihan (22 kelas) | `prompts/01-exercise-classifier.md` | model ONNX, laporan evaluasi, parity test fitur | ☐ |
+| 1 | Pengenal latihan (22 kelas) | `prompts/01-exercise-classifier.md` | model ONNX, laporan evaluasi, parity test fitur | 🚧 kode siap, **belum dilatih** (lihat §8) |
 | 2 | Label repetisi (manusia + alat) | `prompts/02-rep-labeling.md` | alat labeling, `labels/rep_labels.csv` | ☐ |
 | 3 | Penghitung repetisi generik | `prompts/03-generic-rep-counter.md` | `genericCounter.js`, laporan MAE/OBO vs baseline | ☐ |
 | 4 | Integrasi web app | `prompts/04-web-integration.md` | demo: auto-detect + hitung + form + plank | ☐ |
@@ -210,4 +210,46 @@ _(Diisi setiap akhir tahap: tanggal, keputusan, alasan, angka penting.)_
   Pergelangan kaki paling sering tak terlihat (visibility rata-rata 0,49).
 - **Kelas bermasalah (menunggu keputusan):** plank (7 video), decline_bench_press (11 video, 1 rusak),
   3 video tanpa pose.
+
+### 2026-09-28 — Tahap 1: pengenal latihan (kode selesai, model belum dilatih)
+
+**Status: 🚧 belum selesai.** Seluruh kode, test, dan spesifikasi sudah ada dan lulus, tetapi
+**tidak ada model terlatih, tidak ada `app/models/`, dan tidak ada `reports/01-classifier/`**,
+karena lingkungan tempat tahap ini dikerjakan tidak punya `data/keypoints/` maupun kredensial Kaggle.
+Angka akurasi/macro-F1 tidak dikarang (§6.3) — semuanya terbit setelah perintah di `ml/README.md`
+dijalankan di mesin yang punya data.
+
+- **Spesifikasi fitur** (`docs/FEATURES.md`): resample 15 fps, window 30 frame / stride 15,
+  13 landmark + 8 sudut = **47 nilai per frame**, normalisasi pusat pinggul & skala bahu–pinggul.
+  Dua keputusan tambahan di luar prompt:
+  1. **Koreksi rasio aspek** (`x *= width/height`) sebelum apa pun. MediaPipe menormalisasi `x` ke
+     lebar dan `y` ke tinggi, jadi tanpa ini sudut sendi terdistorsi pada frame non-persegi —
+     dan dataset ini campuran `.mp4` lanskap & `.MOV` portrait.
+  2. `z` **tidak dipakai**: kedalaman `pose_landmarker_lite` tidak stabil justru pada kelas yang
+     kualitas posenya sudah terburuk (berbaring & mesin, lihat laporan Tahap 0).
+- **Parity Python↔JS:** lulus di kedua sisi, toleransi 1e-4. Golden file dibuat dari **urutan pose
+  sintetis deterministik** (seed 42), bukan video dataset, supaya parity bisa diperiksa di CI tanpa
+  unduhan 4,6 GB. Urutan itu sengaja memuat gap NaN pendek (diinterpolasi), gap panjang (dibiarkan,
+  membuang 1 dari 2 window), frame dengan skala torso merosot, dan visibility rendah.
+- **Model:** 1D-CNN **63.702 parameter (270 KB float32)**, dipilih atas GRU karena window panjangnya
+  tetap 30 frame dan konvolusi diekspor ke ONNX sebagai node yang ditangani `onnxruntime-web` secara
+  dapat diprediksi (ekspor GRU membawa loop). Baseline pembanding: ringkasan statistik window +
+  `HistGradientBoostingClassifier` balanced.
+- **Jalur ekspor terukur** (bobot **acak** — ini mengukur ekspor, bukan akurasi): satu berkas
+  270 KB, opset 18, `max |onnx − torch| = 4,5e-08` atas 100 window, **0,08 ms/window** (median, CPU).
+- **Dua bug ditemukan test:**
+  1. macro-F1 dirata-ratakan hanya atas kelas yang muncul di split → kelas yang absen (plank punya
+     1 video test) akan menggelembungkan angka utama. Kini selalu atas seluruh 22 kelas.
+  2. `torch.onnx.export` default `external_data=True` membuang bobot ke `*.onnx.data`, sehingga
+     `app/models/` akan berisi graph 24 KB tanpa bobot. Kini inline, dan ekspor menolak lanjut
+     bila berkas pendamping muncul.
+- **Test:** 176 pytest + 71 node:test lulus; `ruff check ml` bersih. Coverage `repcount` 88%
+  (features.py 100%, seluruh modul Tahap 1 ≥ 80%); JS `features.js` & `classifier.js` 100% baris.
+  `ml/tests/test_pipeline_stage1.py` menjalankan seluruh rantai CLI di atas keypoint sintetis.
+- **Ambang "tidak yakin"** di `app/src/core/classify/classifier.js` masih **placeholder** dan
+  ditandai demikian di sumbernya; `classifier_report` menuliskan nilai hasil sweep val ke
+  `thresholds.json`, lalu `export.onnx` meneruskannya ke `app/models/labels.json`.
+
+**Sisa pekerjaan Tahap 1** (di mesin yang punya data): jalankan 4 perintah di `ml/README.md`,
+lalu isi `reports/01-classifier/classifier.md`, `app/models/`, dan perbarui Status di §5.
 
