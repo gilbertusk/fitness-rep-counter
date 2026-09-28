@@ -65,6 +65,21 @@ python -m repcount.data.split                 # → ml/splits/split_v1.json + re
 pytest ml/tests --cov=repcount && ruff check ml
 ```
 
+## Pengenal jenis latihan (Tahap 1 — kode siap, model belum dilatih)
+
+Spesifikasi fitur ada di [`docs/FEATURES.md`](docs/FEATURES.md) dan diimplementasikan **dua kali** —
+Python untuk training, JS untuk browser — dijaga oleh parity test di kedua sisi (toleransi 1e-4):
+
+```bash
+python -m repcount.features.golden   # regenerasi fixture parity (tidak butuh dataset)
+pytest ml/tests/features -q          # parity sisi Python
+npm test                             # parity sisi JS
+```
+
+Perintah training, evaluasi, dan ekspor ada di [`ml/README.md`](ml/README.md); semuanya butuh
+`data/keypoints/` dari Tahap 0. **Belum ada angka akurasi di repo ini karena model belum pernah
+dilatih** — lihat `docs/PLAN.md` §8 untuk sisa pekerjaannya.
+
 ## Roadmap
 
 - [x] MVP: squat & push-up, penghitung + 2 aturan form, unit test
@@ -74,7 +89,7 @@ pytest ml/tests --cov=repcount && ruff check ml
 - [ ] Smoothing sudut (EMA) & indikator kepercayaan pose
 - [ ] Umpan balik suara (Web Speech API)
 - [ ] Deploy (Vercel / GitHub Pages) + GitHub Actions menjalankan `npm test`
-- [ ] (Lanjutan) Klasifikasi jenis latihan otomatis dari urutan keypoint
+- [ ] Klasifikasi jenis latihan otomatis (22 kelas): kode, spesifikasi fitur & parity test selesai; training + laporan evaluasi belum
 
 ## Keterbatasan
 
