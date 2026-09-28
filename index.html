@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rep Counter</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>Rep Counter</h1>
+      <p class="subtitle">Hitung repetisi & cek form olahraga langsung di browser. Video tidak dikirim ke server.</p>
+    </header>
+
+    <section class="controls">
+      <label>
+        Latihan
+        <select id="exercise">
+          <option value="squat">Squat</option>
+          <option value="pushup">Push-up</option>
+        </select>
+      </label>
+      <button id="btn-camera" type="button" disabled>Nyalakan kamera</button>
+      <label class="file-button">
+        Pakai video
+        <input id="video-file" type="file" accept="video/*" disabled />
+      </label>
+      <button id="btn-reset" type="button" class="secondary">Reset</button>
+    </section>
+
+    <section class="stage">
+      <video id="video" playsinline muted></video>
+      <canvas id="overlay"></canvas>
+      <p id="status" class="status">Memuat model pose…</p>
+    </section>
+
+    <section class="stats">
+      <div class="stat">
+        <span class="stat-label">Repetisi</span>
+        <span id="count" class="stat-value">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Sudut sendi</span>
+        <span id="angle" class="stat-value">–</span>
+      </div>
+      <div class="stat wide">
+        <span class="stat-label">Feedback</span>
+        <span id="feedback" class="feedback">–</span>
+        <ul id="warnings" class="warnings"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
