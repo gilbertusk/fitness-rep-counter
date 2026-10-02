@@ -282,7 +282,8 @@ def main() -> None:
     pairs = confused_pairs(truth, results[best]["video_predictions"].argmax(axis=1), labels)
 
     labels_path = config.REPO_ROOT / "app" / "models" / "labels.json"
-    export = json.loads(labels_path.read_text(encoding="utf-8"))["export"] if labels_path.exists() else None
+    # Optional: until stage 1 exports a model, app/models/labels.json is a placeholder with no export block.
+    export = json.loads(labels_path.read_text(encoding="utf-8")).get("export") if labels_path.exists() else None
     counts = {split: int(len(data[split]["x"])) for split in ("train", "val", "test")}
 
     args.out.parent.mkdir(parents=True, exist_ok=True)

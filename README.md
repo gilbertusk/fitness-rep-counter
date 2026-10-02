@@ -1,34 +1,44 @@
 # Rep Counter: Penghitung Repetisi & Koreksi Form Olahraga
 
-Web app yang menghitung repetisi **squat** dan **push-up** serta memberi koreksi form secara real-time dari webcam atau video.
-Semua proses berjalan **di browser** (MediaPipe Pose + WebAssembly/WebGL), jadi video tidak pernah dikirim ke server.
+Web app yang menghitung repetisi untuk **berbagai latihan dengan satu penghitung generik**, memberi koreksi form
+untuk 6 latihan + mode plank, dan (setelah model dilatih) mengenali latihannya otomatis — dari webcam atau
+video. Semua proses berjalan **di browser** (MediaPipe Pose + WebAssembly), jadi video tidak pernah dikirim ke server.
 
 > 🔗 Demo: _(isi setelah deploy)_ · 🎬 GIF demo: _(taruh di sini)_
+
+**Status jujur:** belum ada angka akurasi. Pengenal latihan belum dilatih (Tahap 1) dan penghitung repetisi belum
+dievaluasi dengan label manusia (Tahap 2–3), jadi semua latihan ditandai **eksperimental** di app dan latihan
+dipilih manual. Rinciannya di `docs/PLAN.md` §8.
 
 ## Cara kerja
 
 ```
-Webcam / video ─► MediaPipe Pose (33 keypoint) ─► pilih sisi tubuh paling terlihat
-   ─► hitung sudut sendi (lutut / siku) ─► state machine UP ⇄ DOWN (hysteresis) ─► jumlah repetisi
-   └► aturan form (kemiringan punggung, garis badan) ─► peringatan
+Webcam / video ─► MediaPipe Pose (33 keypoint, mentah)
+   ├─► penghitung repetisi generik (streaming, tanpa threshold per latihan)  ─► jumlah rep
+   ├─► window fitur 2 detik ─► pengenal latihan ONNX (setelah dilatih)        ─► "squat (93%)"
+   └─► One Euro filter ─► aturan form per latihan (debounce 0,5 s)           ─► peringatan
+                       └► timer tahan plank
+sesi: Siap ─► Mengenali ─► Menghitung ─► Istirahat (diam > 3 s) ─► …
 ```
 
-| Latihan | Sudut penghitung | Turun | Naik | Aturan form |
-|---|---|---|---|---|
-| Squat | pinggul–lutut–pergelangan kaki | ≤ 95° | ≥ 160° | torso miring > 45° → "Punggung terlalu membungkuk" |
-| Push-up | bahu–siku–pergelangan tangan | ≤ 90° | ≥ 155° | bahu–pinggul–kaki < 160° → "Jaga badan tetap lurus" |
-
-Gerakan yang turun tapi tidak cukup dalam tidak dihitung dan diberi feedback "Kurang dalam".
+Aturan form dan batasannya: [`docs/FORM_RULES.md`](docs/FORM_RULES.md). Penghitung dan alasan desainnya:
+`app/src/core/counting/genericCounter.js`.
 
 ## Menjalankan secara lokal
 
 ```bash
-npm start          # buka http://localhost:5173
-npm test           # unit test (node:test, tanpa dependency)
+npm start              # buka http://localhost:5173 — kamera hanya bisa diakses dari localhost atau HTTPS
+npm test               # unit test (node:test)
 npm run test:coverage
+npm run test:e2e       # Playwright; sekali dulu: npm install && python -m repcount.data.download_model
 ```
 
-Kamera hanya bisa diakses dari `localhost` atau HTTPS.
+## Privasi: video tidak meninggalkan perangkat
+
+Diverifikasi oleh `app/tests/e2e/smoke.spec.js`: selama app memproses video, **setiap** request yang dibuat halaman
+dicatat, dan test gagal bila ada yang bukan `GET`, membawa body, atau menuju host selain app itu sendiri, CDN
+MediaPipe (`cdn.jsdelivr.net`), dan bucket model pose (`storage.googleapis.com`). Yang diunduh hanya kode dan
+model; frame video diproses di memori browser dan tidak pernah dikirim.
 
 ## Struktur repo
 
@@ -110,16 +120,20 @@ Petunjuk lengkap: [`tools/eval/README.md`](tools/eval/README.md).
 ## Roadmap
 
 - [x] MVP: squat & push-up, penghitung + 2 aturan form, unit test
-- [ ] Rekam 20–30 video uji (form benar/salah), lalu tuning threshold
-- [ ] Evaluasi di [RepCount](https://svip-lab.github.io/dataset/RepCount_dataset.html): MAE jumlah repetisi, dicantumkan di README
-- [ ] Tambah latihan: lunge, bicep curl, shoulder press
-- [ ] Smoothing sudut (EMA) & indikator kepercayaan pose
-- [ ] Umpan balik suara (Web Speech API)
-- [ ] Deploy (Vercel / GitHub Pages) + GitHub Actions menjalankan `npm test`
-- [ ] Klasifikasi jenis latihan otomatis (22 kelas): kode, spesifikasi fitur & parity test selesai; training + laporan evaluasi belum
+- [x] Penghitung repetisi generik untuk semua latihan (Tahap 3) — kode & harness; **evaluasi menunggu label**
+- [x] App Tahap 4: sesi otomatis, aturan form 6 latihan + plank, One Euro filter, indikator kualitas pose,
+      suara, riwayat set, kamera depan/belakang, smoke test Playwright
+- [ ] Label repetisi manusia (Tahap 2) → evaluasi MAE/OBO penghitung (Tahap 3)
+- [ ] Training pengenal latihan (Tahap 1) → deteksi otomatis aktif di app
+- [ ] Video uji form benar/salah berlabel, untuk mengukur akurasi aturan form
+- [ ] Deploy (GitHub Pages) + GitHub Actions + benchmark FPS di perangkat nyata (Tahap 5)
 
 ## Keterbatasan
 
-- Threshold masih nilai awal dan perlu dituning dengan data nyata.
-- Kamera sebaiknya menghadap tubuh dari samping; sudut kamera frontal membuat sudut sendi kurang akurat.
+- **Belum ada angka akurasi** untuk pengenal latihan, penghitung repetisi, maupun aturan form (lihat Status di atas).
+- Ambang aturan form adalah titik awal yang belum divalidasi; aturan deadlift hanya proksi 2D (`docs/FORM_RULES.md`).
+- Aturan form squat, push-up, curl, deadlift, dan plank butuh kamera dari samping; app memberi petunjuk bila
+  kamera tampak dari depan.
 - Hanya satu orang per frame.
+- Di perangkat tanpa GPU sungguhan (WebGL perangkat lunak), MediaPipe dijalankan di CPU — terukur ±35 ms per
+  frame di mesin uji 4-core; perangkat yang lebih lemah akan lebih lambat.

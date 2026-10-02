@@ -56,7 +56,8 @@ Prinsip: **tiga dunia terpisah jelas** — `app/` (yang dipakai user), `ml/` (ya
 ```
 fitness-rep-counter/
 ├── README.md
-├── package.json                     # task runner JS: start, test, lint
+├── package.json                     # task runner JS: start, test, test:e2e
+├── package-lock.json                # dikunci npm (devDependencies untuk e2e)
 ├── .gitignore                       # mengabaikan data/, .venv/, node_modules/, dll.
 ├── .github/workflows/ci.yml
 │
@@ -81,13 +82,13 @@ fitness-rep-counter/
 │   │   │   ├── classify/            # classifier.js (pasca-proses prediksi)
 │   │   │   ├── counting/            # thresholdCounter.js, genericCounter.js, holdTimer.js
 │   │   │   ├── form/                # measure.js, rules/<latihan>.js
-│   │   │   └── session/             # session.js (state machine sesi)
+│   │   │   └── session/             # session.js (state machine), speechQueue.js, workout.js (loop per frame)
 │   │   ├── adapters/                # pembungkus browser API: poseLandmarker.js, onnxClassifier.js, speech.js, storage.js
 │   │   └── ui/                      # DOM & render: camera.js, overlay.js, panel.js
 │   └── tests/
 │       ├── unit/                    # mencerminkan struktur src/core/
-│       ├── e2e/                     # Playwright smoke test
-│       └── fixtures/                # features_golden.json, syntheticPose.js, videos/
+│       ├── e2e/                     # Playwright: smoke.spec.js, playwright.config.js
+│       └── fixtures/                # features_golden.json, syntheticPose.js, videos/ (push-up_17.mp4 + .webm)
 │
 ├── ml/                              # 🧠 Pipeline Python
 │   ├── pyproject.toml               # paket `repcount`, dependency di-pin
@@ -160,7 +161,7 @@ Aturan kerapian:
 | 1 | Pengenal latihan (22 kelas) | `prompts/01-exercise-classifier.md` | model ONNX, laporan evaluasi, parity test fitur | 🚧 kode siap, **belum dilatih** (lihat §8) |
 | 2 | Label repetisi (manusia + alat) | `prompts/02-rep-labeling.md` | alat labeling, `labels/rep_labels.csv` | 🚧 alat siap, menunggu label manusia (lihat §8) |
 | 3 | Penghitung repetisi generik | `prompts/03-generic-rep-counter.md` | `genericCounter.js`, laporan MAE/OBO vs baseline | 🚧 kode & harness siap, **belum dievaluasi** (butuh label Tahap 2, lihat §8) |
-| 4 | Integrasi web app | `prompts/04-web-integration.md` | demo: auto-detect + hitung + form + plank | ☐ |
+| 4 | Integrasi web app | `prompts/04-web-integration.md` | demo: auto-detect + hitung + form + plank | 🚧 app jalan, **deteksi otomatis menunggu model Tahap 1** (lihat §8) |
 | 5 | Siap dipamerkan | `prompts/05-ship.md` | deploy, CI, benchmark FPS, README final | ☐ |
 
 Urutan wajib: 0 → 1 → (2 bisa paralel dengan 1) → 3 → 4 → 5.
@@ -354,3 +355,68 @@ kecepatan — tidak satu pun berkata apa-apa tentang akurasi di dataset asli.
 `keypoints_json` → `evalReps --grid` untuk `generic` dan `generic-angle` di val → pilih sinyal &
 setelan → `evalReps` keempat counter di val → **sekali** `--split test --final` → `rep_plots` →
 tulis `reports/03-rep-counter/rep_counter.md`.
+
+### 2026-10-02 — Tahap 4: integrasi web app (app jalan, deteksi otomatis menunggu model)
+
+**Status: 🚧.** Dikerjakan atas permintaan langsung **sebelum Tahap 1–3 selesai** (menyimpang dari §5).
+App berjalan penuh untuk webcam dan file video dengan pemilihan latihan manual; **deteksi latihan
+otomatis belum aktif** karena belum ada `exercise_classifier.onnx`. Semua jalurnya sudah terpasang dan
+diuji dengan skor sintetis — begitu `python -m repcount.export.onnx` dijalankan, app memakainya.
+
+- **Yang jalan:** sesi `Siap → Mengenali → Menghitung → Istirahat` (set dimulai saat gerakan dimulai,
+  jadi rep selama pengenalan tetap terhitung; label terkunci setelah 2 window yakin; pilihan manual
+  mematikan deteksi otomatis); penghitung generik untuk semua 22 latihan; aturan form untuk squat,
+  push-up, biceps curl, lateral raise, deadlift, shoulder press, dan plank (`docs/FORM_RULES.md`);
+  timer tahan plank; One Euro filter; petunjuk kualitas pose; suara (maks 1 ucapan / 2 s, bisa
+  dimatikan); riwayat set di `localStorage`; kamera depan/belakang; tampilan ponsel.
+- **Semua latihan ditandai "eksperimental"**: prompt meminta label itu untuk latihan yang lemah di
+  Tahap 3, tapi Tahap 3 belum dievaluasi — jadi tidak ada dasar untuk menyebut satu pun "didukung".
+- **Penyimpangan dari prompt — One Euro filter:** dipakai untuk overlay, aturan form, dan timer plank,
+  **tidak** untuk fitur classifier dan penghitung repetisi. Keduanya harus melihat keypoint mentah yang
+  sama dengan saat dilatih/dievaluasi (§3); memfilternya di browser membuat angka evaluasi tidak lagi
+  menggambarkan app.
+- **Paritas window classifier:** `features.js` kini membangun window frame demi frame
+  (`pushWindowStream`) yang **identik** dengan window offline — dibuktikan dengan golden fixture,
+  toleransi 1e-4. Biayanya 1 frame *look-ahead* dan jeda 0,4 s per window.
+- **Berkas baru di peta §4:** `core/session/workout.js` (seluruh keputusan per frame dalam satu fungsi
+  murni, agar `main.js` benar-benar hanya merangkai dan seluruh loop teruji di Node),
+  `app/models/labels.json` (placeholder tanpa label; ditimpa ekspor Tahap 1), `package-lock.json`,
+  `app/tests/e2e/playwright.config.js`, dan salinan WebM video fixture (153 KB).
+- **Bukti `core/` tidak meng-import `adapters/`/`ui/`:**
+  `grep -rnE "from ['\"](\.\./)+(adapters|ui)/" app/src/core/` → tidak ada hasil.
+- **Masalah yang ditemukan saat menjalankan app sungguhan, sudah diperbaiki:**
+  1. **Delegate GPU di WebGL perangkat lunak** (SwiftShader, llvmpipe — VM, desktop jarak jauh, Linux
+     tanpa driver GPU): MediaPipe **245 ms/frame vs 35 ms di CPU**. Adapter kini membaca renderer WebGL
+     dan memakai CPU bila renderer-nya perangkat lunak: **3–4 FPS → 21–24 FPS** di mesin uji, dan
+     fixture terhitung tepat (3 rep dari 3 putaran klip 1-rep).
+  2. Aturan mengukur titik yang tidak terlihat: dengan pinggul keluar frame, aturan garis badan push-up
+     memberi peringatan dari posisi tebakan (app awal juga begitu). Kini tiap aturan hanya mengukur bila
+     titiknya sendiri terlihat.
+  3. Panel menulis "Form terlihat baik" saat tidak ada aturan yang bisa mengukur → kini "belum bisa
+     dinilai".
+  4. Deteksi istirahat butuh ±7 s, bukan 3 s, karena flag `moving` membaca window 4 s → kini 1 s
+     terakhir.
+  5. `[hidden]` kalah oleh `.stat { display: flex }`: mode plank menampilkan kartu rep dan tahan sekaligus.
+  6. Tanpa model, app memicu 404 di console dan mengunduh `onnxruntime-web` sia-sia → adapter kini
+     membaca `labels.json` dulu.
+- **Kecepatan (diukur di Chromium headless, 4-core):** seluruh logika app (`stepFrame`) median **0,2 ms**,
+  maks 0,9 ms per frame; sisanya MediaPipe. Angka di perangkat nyata menunggu benchmark Tahap 5.
+- **E2E** (`npm run test:e2e`): video fixture terhitung > 0, tanpa error console, dan **setiap request
+  dicatat** — test gagal bila ada yang bukan GET, membawa body, atau ke host di luar app, CDN MediaPipe,
+  dan bucket model. Chromium Playwright tidak punya H.264, jadi memakai salinan WebM; MediaPipe disajikan
+  dari paket npm yang sama dengan isi CDN. Baris `INFO:` dari log WASM MediaPipe (dialirkan ke
+  `console.error`) adalah satu-satunya yang dikecualikan. Jalur webcam diverifikasi sekali dengan kamera
+  palsu Chromium (tidak di-commit): menghitung, kamera depan dicerminkan, kamera belakang tidak.
+- **Lingkungan pengerjaan:** kebijakan jaringannya menolak `cdn.jsdelivr.net`, sehingga app tidak bisa
+  dibuka di sini persis seperti produksi; seluruh verifikasi memakai salinan lokal paket npm.
+- **Satu bug Python yang saya buat sendiri, ditemukan sebelum commit:** `classifier_report.py` membaca
+  blok `export` dari `app/models/labels.json` tanpa syarat, sehingga placeholder memicu `KeyError`.
+  Blok itu kini opsional.
+- **Temuan lingkungan:** di Linux, MediaPipe Python butuh pustaka sistem libEGL (`libegl1`). Test ekstraksi
+  Tahap 0 selama ini *dilewati* di sini karena model pose belum terunduh; setelah model ada dan libEGL
+  dipasang, test itu berjalan dan lulus. Dicatat di `ml/README.md`.
+- **Test:** 251 node:test + 2 Playwright + 246 pytest lulus (0 dilewati); coverage `app/src/core/`
+  **100% baris, 97,5% cabang**; `ruff check ml` bersih.
+
+**Sisa pekerjaan Tahap 4:** aktifkan deteksi otomatis setelah Tahap 1 (cukup ekspor model ke
+`app/models/`), lalu ganti status "eksperimental" per latihan sesuai hasil Tahap 3.

@@ -6,6 +6,7 @@ Semua data dibaca/ditulis di `data/` root repo (override: env `FITNESS_DATA_DIR`
 ```bash
 python -m venv .venv && .venv/Scripts/activate      # dari root repo
 pip install -e "ml[dev,train]"                      # extra train: torch, sklearn, onnx
+# Linux: MediaPipe butuh libEGL — sudo apt-get install libegl1
 pytest ml/tests --cov=repcount && ruff check ml
 python -m repcount.data.extract --limit 5           # Tahap 0 — lihat README root
 ```
