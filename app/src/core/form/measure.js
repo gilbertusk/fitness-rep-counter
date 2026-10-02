@@ -110,9 +110,12 @@ export function evaluateForm(pose, ruleSet, frameSize) {
   if (!side) return { measurable: false, side: null, results: [] };
 
   const at = (name) => toPixel(pose[POINTS[name][sideIndex(side)]], frameSize);
+  const seen = (name) => (pose[POINTS[name][sideIndex(side)]]?.visibility ?? 0) >= MIN_VISIBILITY;
   const torso = Math.hypot(at('shoulder').x - at('hip').x, at('shoulder').y - at('hip').y);
   const results = ruleSet.rules.map((rule) => {
-    const value = MEASURES[rule.measure.kind](rule.measure.points.map(at), torso);
+    // A rule only speaks about points it can see: a hip MediaPipe guessed from outside the frame
+    // must not trigger "keep your body straight".
+    const value = rule.measure.points.every(seen) ? MEASURES[rule.measure.kind](rule.measure.points.map(at), torso) : null;
     const per = rule.per ?? 'frame';
     return { id: rule.id, message: rule.message, value, per, broken: per === 'frame' && breaks(rule.limit, value) };
   });
@@ -122,8 +125,9 @@ export function evaluateForm(pose, ruleSet, frameSize) {
 /** Ids of the per-frame rules broken in this evaluation (input for core/form/debounce.js). */
 export const brokenRules = (evaluation) => evaluation.results.filter((r) => r.broken).map((r) => r.id);
 
-/** Whether the pose satisfies every rule: the plank timer runs only while this holds. */
-export const inPosition = (evaluation) => evaluation.measurable && evaluation.results.every((r) => !r.broken);
+/** Whether every rule could be measured and holds: the plank timer runs only while this is true. */
+export const inPosition = (evaluation) => evaluation.measurable
+  && evaluation.results.every((r) => r.value !== null && Number.isFinite(r.value) && !r.broken);
 
 export function createRepCheck() {
   return Object.freeze({ extremes: Object.freeze({}) });

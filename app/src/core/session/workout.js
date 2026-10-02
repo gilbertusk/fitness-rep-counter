@@ -86,7 +86,9 @@ function formStep(state, smoothed, ruleSet, timeMs, size, repCompleted) {
     : state.repWarning && state.repWarning.untilMs > timeMs ? state.repWarning : null;
   const messages = (ruleSet?.rules ?? []).filter((r) => visible.includes(r.id)).map((r) => r.message);
   return { evaluation, debounce, repCheck, repWarning, visible: Object.freeze(visible), failed,
-    warnings: [...messages, ...(repWarning ? [repWarning.message] : [])] };
+    warnings: [...messages, ...(repWarning ? [repWarning.message] : [])],
+    // Whether any rule could actually measure this frame: silence is not the same as good form.
+    checked: evaluation.results.some((r) => r.value !== null && Number.isFinite(r.value)) };
 }
 
 function speechStep(state, form, reps, previousReps, timeMs) {
@@ -129,12 +131,12 @@ export function stepFrame(state, { frame, timeMs, size }) {
     repWarning: form.repWarning, visible: form.visible, hold, session, speech, lastTimeMs: timeMs, fps });
   return {
     state: next,
-    view: viewOf(next, { smoothed, label, ruleSet, warnings: form.warnings, size, raw: frame }),
+    view: viewOf(next, { smoothed, label, ruleSet, warnings: form.warnings, formChecked: form.checked, size, raw: frame }),
     effects: { speak: text, classify: windows, closedSets: session.sets.slice(base.session.sets.length) },
   };
 }
 
-function viewOf(state, { smoothed, label, ruleSet, warnings, size, raw }) {
+function viewOf(state, { smoothed, label, ruleSet, warnings, formChecked, size, raw }) {
   const entry = CATALOG[label] ?? null;
   return Object.freeze({
     phase: state.session.phase,
@@ -151,6 +153,7 @@ function viewOf(state, { smoothed, label, ruleSet, warnings, size, raw }) {
     hold: { holding: state.hold.holding, currentMs: state.hold.currentMs, bestMs: state.hold.bestMs },
     warnings: Object.freeze(warnings),
     hasRules: ruleSet !== null,
+    formChecked,
     quality: assessPoseQuality(raw, size, { points: ruleSet?.sidePoints, view: ruleSet?.view }),
     fps: state.fps,
     landmarks: smoothed,

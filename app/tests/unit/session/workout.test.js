@@ -108,6 +108,16 @@ test('a form warning appears after half a second of bad form and is spoken once'
   assert.ok(view.reps >= 2);
 });
 
+test('the view says whether form could be judged at all, not just whether it broke a rule', () => {
+  const stream = poseStream({ segments: [{ reps: 1, repSeconds: 2 }] });
+  const seen = play(chooseExercise(startWorkout(createWorkout(), 0), 'squat', 0), stream);
+  assert.equal(seen.view.formChecked, true);
+  const hidden = { ...stream, frames: stream.frames.map((f) => f.map((p) => ({ ...p, visibility: 0.1 }))) };
+  const unseen = play(chooseExercise(startWorkout(createWorkout(), 0), 'squat', 0), hidden);
+  assert.equal(unseen.view.formChecked, false);
+  assert.deepEqual(unseen.view.warnings, []);
+});
+
 test('a plank hold runs the timer and keeps the set open while still', () => {
   const { view, state } = play(chooseExercise(startWorkout(createWorkout(), 0), 'plank', 0), staticStream(PLANK, 8));
   assert.equal(view.task, 'hold');

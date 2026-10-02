@@ -29,16 +29,16 @@ export async function createExerciseClassifier({
   modelUrl = CLASSIFIER_MODEL_URL,
   labelsUrl = CLASSIFIER_LABELS_URL,
 } = {}) {
+  // labels.json first: until stage 1 exports a model it lists no labels, and then neither the runtime
+  // nor the model is fetched — no wasted download, no 404s in the console.
+  const response = await fetch(labelsUrl);
+  if (!response.ok) throw new Error(`cannot load ${labelsUrl}: ${response.status}`);
+  const metadata = await response.json();
+  if (!metadata.labels?.length) throw new Error('no trained exercise classifier yet');
+
   const ort = await import(ONNXRUNTIME_BUNDLE_URL);
   ort.env.wasm.wasmPaths = ONNXRUNTIME_WASM_URL;
-
-  const [session, metadata] = await Promise.all([
-    ort.InferenceSession.create(modelUrl, { executionProviders: ['webgpu', 'wasm'] }),
-    fetch(labelsUrl).then((response) => {
-      if (!response.ok) throw new Error(`cannot load ${labelsUrl}: ${response.status}`);
-      return response.json();
-    }),
-  ]);
+  const session = await ort.InferenceSession.create(modelUrl, { executionProviders: ['webgpu', 'wasm'] });
 
   const [inputName] = session.inputNames;
   const [outputName] = session.outputNames;

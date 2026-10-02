@@ -171,6 +171,19 @@ test('the better-seen side is measured, and nothing when neither side is seen', 
   assert.equal(evaluateForm(squatPose(10), null, SIZE).measurable, false);
 });
 
+test('a rule stays silent about points it cannot see', () => {
+  // Hips and ankles guessed from outside the frame: the arm points pick the side, but the body-line
+  // rule needs the hip and ankle, so it must not warn — the original app did.
+  const outOfFrame = pushUpPose(0.1).map((p, i) => ([23, 24, 27, 28].includes(i) ? { ...p, visibility: 0.2 } : p));
+  assert.deepEqual(broken('push_up', outOfFrame), []);
+  assert.equal(evaluateForm(outOfFrame, RULES.push_up, SIZE).results[0].value, null);
+});
+
+test('the plank timer does not run on a hip it cannot see', () => {
+  const hipHidden = plankPose(0).map((p, i) => ([23, 24].includes(i) ? { ...p, visibility: 0.2 } : p));
+  assert.equal(inPosition(evaluateForm(hipHidden, RULES.plank, SIZE)), false);
+});
+
 test('a degenerate pose measures nothing instead of warning', () => {
   const collapsed = pose({ shoulder: [0.5, 0.5], hip: [0.5, 0.5], elbow: [0.5, 0.5], wrist: [0.5, 0.5],
     ankle: [0.5, 0.5], knee: [0.5, 0.5], ear: [0.5, 0.5] });

@@ -1,0 +1,5 @@
+{
+  "labels": [],
+  "thresholds": {},
+  "note": "Belum ada model terlatih (docs/PLAN.md §8, Tahap 1). Berkas ini ditimpa oleh `python -m repcount.export.onnx`, bersama exercise_classifier.onnx. Selama daftar labels kosong, app memakai pemilihan latihan manual."
+}
