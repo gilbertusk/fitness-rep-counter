@@ -163,4 +163,4 @@ Golden file dibuat dari **urutan pose sintetis deterministik** (seed 42), bukan 
 supaya parity test bisa dijalankan tanpa mengunduh 4,6 GB data dan tetap reproducible di CI.
 Urutan itu sengaja memuat kasus tepi: gap NaN pendek (diinterpolasi), gap NaN panjang (dibiarkan),
 visibility rendah, dan frame dengan skala merosot. Untuk memeriksa dengan video nyata:
-`python -m repcount.features.golden --video-id push-up_17`.
+`python -m repcount.features.golden --video-id push_up_17`.
