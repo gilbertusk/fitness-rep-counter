@@ -7,6 +7,7 @@ other decision come from the validation split; nothing here tunes anything on te
 """
 
 import argparse
+import csv
 import json
 from pathlib import Path
 
@@ -16,6 +17,8 @@ from repcount import config
 from repcount.features import features as feat
 
 REPORT_DIR = config.REPORTS_DIR / "01-classifier"
+POSE_QUALITY_CSV = config.REPORTS_DIR / "00-data" / "pose_quality.csv"
+SMALL_SUPPORT = 2  # with this few test videos a class's F1 can only be 0, 0.5, 0.67 or 1
 TARGET_PRECISION = 0.90  # accuracy we want among the windows the app is willing to act on
 
 
@@ -62,10 +65,12 @@ def metrics(y_true: np.ndarray, y_pred: np.ndarray, labels: list[str]) -> dict:
     # so a class missing from this split (plank has one test video) would quietly inflate macro-F1.
     indices = range(len(labels))
     per_class = f1_score(y_true, y_pred, average=None, labels=indices, zero_division=0)
+    support = np.bincount(np.asarray(y_true, dtype=int), minlength=len(labels))
     return {
         "accuracy": float(accuracy_score(y_true, y_pred)),
         "macro_f1": float(f1_score(y_true, y_pred, average="macro", labels=indices, zero_division=0)),
         "per_class_f1": {label: float(score) for label, score in zip(labels, per_class, strict=True)},
+        "per_class_support": {label: int(n) for label, n in zip(labels, support, strict=True)},
         "n": int(len(y_true)),
     }
 
@@ -131,6 +136,38 @@ def plot_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, labels: list[s
     return path
 
 
+def read_pose_detection(path: Path = POSE_QUALITY_CSV) -> dict | None:
+    """Per-class share of frames with a pose (Stage 0), plus the dataset-wide share under "__all__"."""
+    if not path.exists():
+        return None
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    detection = {row["label"]: float(row["detected_pct"]) for row in rows}
+    frames = sum(int(row["n_frames"]) for row in rows)
+    detection["__all__"] = 100 * sum(int(row["n_detected"]) for row in rows) / frames if frames else float("nan")
+    return detection
+
+
+def pose_context(worst: list[tuple[str, float]], detection: dict | None) -> list[str]:
+    """What Stage 0's pose quality does and does not explain about the worst classes — facts only."""
+    if not detection:
+        return ["Kualitas pose per kelas tidak tersedia (`reports/00-data/pose_quality.csv` tidak ada)."]
+    overall = detection["__all__"]
+    known = [(label, detection[label]) for label, _ in worst if label in detection]
+    below = [label for label, pct in known if pct < overall]
+    above = [label for label, pct in known if pct >= overall]
+    lines = [
+        f"Deteksi pose kelas-kelas terburuk (Tahap 0, `reports/00-data/pose_quality.md`; seluruh dataset "
+        f"{overall:.1f}%): " + ", ".join(f"{label} {pct:.1f}%" for label, pct in known) + ".",
+    ]
+    if below:
+        lines.append(f"Di bawah rata-rata dataset, jadi pose yang hilang bisa ikut menjelaskan: {', '.join(below)}.")
+    if above:
+        lines.append(f"Di atas rata-rata dataset, jadi kualitas deteksi pose **tidak** menjelaskan: "
+                     f"{', '.join(above)} — penyebabnya harus dicari di kelas yang tertukar dan videonya.")
+    return [" ".join(lines)]
+
+
 def _metric_rows(results: dict, level: str) -> list[str]:
     return [
         f"| {name} | {results[name][level]['accuracy']:.3f} | {results[name][level]['macro_f1']:.3f} | "
@@ -140,9 +177,10 @@ def _metric_rows(results: dict, level: str) -> list[str]:
 
 
 def render_report(results: dict, labels: list[str], thresholds: dict, pairs: list[dict],
-                  counts: dict, export: dict | None) -> str:
+                  counts: dict, export: dict | None, detection: dict | None = None) -> str:
     best = max(results, key=lambda name: results[name]["video"]["macro_f1"])
     per_class = results[best]["video"]["per_class_f1"]
+    support = results[best]["video"].get("per_class_support", {})
     worst = sorted(per_class.items(), key=lambda item: item[1])[:5]
 
     lines = [
@@ -178,9 +216,12 @@ def render_report(results: dict, labels: list[str], thresholds: dict, pairs: lis
         "",
         "## F1 per kelas (level video, model terbaik)",
         "",
-        "| Kelas | F1 |",
-        "|---|---:|",
-        *[f"| {label} | {per_class[label]:.3f} |" for label in labels],
+        "| Kelas | F1 | n video test |",
+        "|---|---:|---:|",
+        *[f"| {label} | {per_class[label]:.3f} | {support.get(label, '–')} |" for label in labels],
+        "",
+        f"Kelas dengan ≤ {SMALL_SUPPORT} video test hanya bisa bernilai 0, 0,5, 0,67, atau 1 — "
+        "jangan dibaca sebagai angka yang presisi.",
         "",
         f"Lima kelas terburuk: {', '.join(f'{label} ({score:.2f})' for label, score in worst)}.",
         "",
@@ -190,9 +231,7 @@ def render_report(results: dict, labels: list[str], thresholds: dict, pairs: lis
         "|---|---|---:|---:|",
         *[f"| {p['true']} | {p['predicted']} | {p['count']} | {p['share_of_true']:.0%} |" for p in pairs],
         "",
-        "Dugaan penyebab dikaitkan dengan `reports/00-data/pose_quality.md`: kelas dengan deteksi pose "
-        "terburuk (decline_bench_press 87,6%, romanian_deadlift 88,3%, bench_press 91,7%) adalah latihan "
-        "berbaring dan mesin, di mana pose 2D dari satu kamera sulit membedakan sudut bangku.",
+        *pose_context(worst, detection),
         "",
         "![Confusion matrix](figures/confusion_matrix.png)",
         "",
@@ -287,7 +326,8 @@ def main() -> None:
     counts = {split: int(len(data[split]["x"])) for split in ("train", "val", "test")}
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(render_report(results, labels, thresholds, pairs, counts, export), encoding="utf-8")
+    args.out.write_text(render_report(results, labels, thresholds, pairs, counts, export, read_pose_detection()),
+                        encoding="utf-8")
     print(f"best: {best} · test macro-F1 (video) {results[best]['video']['macro_f1']:.3f} → {args.out}")
 
 
