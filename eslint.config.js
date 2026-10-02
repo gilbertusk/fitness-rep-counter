@@ -11,7 +11,7 @@ export default [
   },
   {
     // Command-line tools, tests and configs run in Node.
-    files: ['tools/eval/**/*.js', 'tools/checkStructure*.js', '**/tests/**/*.js', '**/*.test.js', '*.config.js'],
+    files: ['tools/eval/**/*.js', 'tools/checkStructure*.js', 'tools/benchmark/headless.js', '**/tests/**/*.js', '**/*.test.js', '*.config.js'],
     languageOptions: { globals: { ...globals.node } },
   },
 ];
