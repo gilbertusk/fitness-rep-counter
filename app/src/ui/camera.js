@@ -1,6 +1,6 @@
 /** Camera and video-file sources for the <video> element. */
 
-export function stopSource(video) {
+function stopSource(video) {
   video.srcObject?.getTracks().forEach((track) => track.stop());
   video.srcObject = null;
   if (video.src) URL.revokeObjectURL(video.src);

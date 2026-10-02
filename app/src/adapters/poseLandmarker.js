@@ -5,7 +5,7 @@ import { MEDIAPIPE_BUNDLE_URL, MEDIAPIPE_WASM_URL, POSE_MODEL_URL } from '../con
  * and far slower than its real CPU path: 245 ms vs 35 ms per frame, measured in headless Chromium on a
  * 4-core machine. VMs, remote desktops and Linux without GPU drivers fall in the same trap.
  */
-export function prefersCpu(renderer) {
+function prefersCpu(renderer) {
   return !renderer || /swiftshader|llvmpipe|softpipe|software|basic render/i.test(renderer);
 }
 

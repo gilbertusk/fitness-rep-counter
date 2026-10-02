@@ -56,10 +56,11 @@ Prinsip: **tiga dunia terpisah jelas** — `app/` (yang dipakai user), `ml/` (ya
 ```
 fitness-rep-counter/
 ├── README.md
-├── package.json                     # task runner JS: start, test, test:e2e
+├── package.json                     # task runner JS: start, test, coverage:core, lint, test:e2e
 ├── package-lock.json                # dikunci npm (devDependencies untuk e2e)
 ├── .gitignore                       # mengabaikan data/, .venv/, node_modules/, dll.
-├── .github/workflows/ci.yml
+├── eslint.config.js                 # ESLint minimal (flat config), dipakai CI
+├── .github/workflows/               # ci.yml (test, coverage, lint, pytest, struktur, e2e) · deploy-pages.yml (manual)
 │
 ├── data/                            # 💾 SEMUA data (di-.gitignore, tidak di-commit)
 │   ├── workout-videos/<kelas>/      # dataset mentah (*.mp4, *.MOV)
@@ -80,7 +81,7 @@ fitness-rep-counter/
 │   │   │   ├── geometry/            # angles.js, oneEuroFilter.js
 │   │   │   ├── features/            # features.js (spesifikasi: docs/FEATURES.md)
 │   │   │   ├── classify/            # classifier.js (pasca-proses prediksi)
-│   │   │   ├── counting/            # thresholdCounter.js, genericCounter.js, holdTimer.js
+│   │   │   ├── counting/            # genericCounter.js, holdTimer.js; baseline: thresholdCounter.js, naivePeakCounter.js
 │   │   │   ├── form/                # measure.js, rules/<latihan>.js
 │   │   │   └── session/             # session.js (state machine), speechQueue.js, workout.js (loop per frame)
 │   │   ├── adapters/                # pembungkus browser API: poseLandmarker.js, onnxClassifier.js, speech.js, storage.js
@@ -112,8 +113,13 @@ fitness-rep-counter/
 │   │   ├── evalReps.js
 │   │   ├── lib/repMetrics.js
 │   │   └── tests/
-│   ├── benchmark/                   # benchmark FPS di browser
-│   └── checkStructure.js            # dipakai CI: menjaga struktur folder ini
+│   ├── benchmark/                   # FPS & latensi di browser
+│   │   ├── index.html
+│   │   ├── src/                     # bench.js (pengukuran), stats.js (murni)
+│   │   ├── headless.js              # run Playwright yang bisa diulang
+│   │   └── tests/
+│   ├── checkStructure.js            # dipakai CI: menjaga struktur folder ini
+│   └── checkStructure.test.js
 │
 ├── labels/                          # ✍️ Label manusia (di-commit)
 │   ├── README.md                    # definisi 1 repetisi & aturan labeling
@@ -162,7 +168,7 @@ Aturan kerapian:
 | 2 | Label repetisi (manusia + alat) | `prompts/02-rep-labeling.md` | alat labeling, `labels/rep_labels.csv` | 🚧 alat siap, menunggu label manusia (lihat §8) |
 | 3 | Penghitung repetisi generik | `prompts/03-generic-rep-counter.md` | `genericCounter.js`, laporan MAE/OBO vs baseline | 🚧 kode & harness siap, **belum dievaluasi** (butuh label Tahap 2, lihat §8) |
 | 4 | Integrasi web app | `prompts/04-web-integration.md` | demo: auto-detect + hitung + form + plank | 🚧 app jalan, **deteksi otomatis menunggu model Tahap 1** (lihat §8) |
-| 5 | Siap dipamerkan | `prompts/05-ship.md` | deploy, CI, benchmark FPS, README final | ☐ |
+| 5 | Siap dipamerkan | `prompts/05-ship.md` | deploy, CI, benchmark FPS, README final | 🚧 CI, benchmark, README, model card & konfigurasi deploy siap; **menunggu persetujuan deploy, benchmark laptop/HP, dan angka Tahap 1–3** (lihat §8) |
 
 Urutan wajib: 0 → 1 → (2 bisa paralel dengan 1) → 3 → 4 → 5.
 
@@ -420,3 +426,50 @@ diuji dengan skor sintetis — begitu `python -m repcount.export.onnx` dijalanka
 
 **Sisa pekerjaan Tahap 4:** aktifkan deteksi otomatis setelah Tahap 1 (cukup ekspor model ke
 `app/models/`), lalu ganti status "eksperimental" per latihan sesuai hasil Tahap 3.
+
+### 2026-10-02 — Tahap 5: siap dipamerkan (siap kecuali yang butuh pemilik & data)
+
+- **Status jujur, bukan ✅:** prompt meminta semua status §5 menjadi ✅. Itu berarti menyatakan model
+  terlatih, rep terevaluasi, dan app ter-deploy — ketiganya belum terjadi. Status Tahap 1–5 tetap 🚧
+  dengan alasan; README dan model card tidak memuat angka akurasi, hanya "–" dengan tautan ke laporan
+  yang akan menghasilkannya.
+- **CI** (`.github/workflows/ci.yml`, job js / structure / python / e2e): `npm test`, gerbang coverage
+  `npm run coverage:core` (gagal < 80% baris, cabang, atau fungsi di `app/src/core/` — diuji gagal
+  dengan ambang 100% fungsi), ESLint minimal (`eslint.config.js`, 0 temuan; probe dengan variabel tak
+  terpakai & fungsi tak terdefinisi ditolak), `pytest --cov` + `ruff`, cek struktur, smoke test
+  Playwright. Python di CI memasang extra `train` dengan torch CPU, karena test ekspor/model
+  membutuhkannya (prompt menyebut `ml[dev]` saja). Semua langkah dijalankan lokal dulu dan lulus;
+  workflow belum pernah berjalan di GitHub sampai di-push.
+- **`tools/checkStructure.js`** memeriksa lebih dari yang diminta, semuanya aturan §4/§6 yang sudah ada:
+  entri root di luar peta, `core/` meng-import `adapters/`/`ui/` (path di-resolve, bukan dicocokkan teks;
+  termasuk import dinamis & re-export), file sumber > 400 baris, dan video/npz/checkpoint ter-track di
+  luar fixture. Hanya file yang di-track git yang dihitung.
+- **Benchmark** (`tools/benchmark/`): halaman yang meng-import modul app asli; dua putaran — langsung
+  (pose → `stepFrame` → overlay, + pengenal) dan putar ulang landmark untuk tahap core (tiap panggilan
+  diulang 20× pada input sama, sah karena core murni dan di bawah resolusi `performance.now()`).
+  **Satu kesalahan saya, ditemukan karena angkanya tidak cocok dengan Tahap 4:** versi awal memakai
+  `requestVideoFrameCallback` dan mendapat 15 FPS, sedangkan app (loop `requestAnimationFrame`) 21–24 FPS;
+  benchmark kini memakai loop yang sama dengan `main.js` → 22–23 FPS.
+- **Hasil terukur (container cloud 4 vCPU, tanpa GPU, delegate CPU):** 22–23 FPS end-to-end; pose
+  p50/p95 39,7/54,0 ms; `stepFrame` 0,105/0,195 ms; pengenal (arsitektur asli, **bobot acak** — hanya
+  latensi) 0,8 ms p50; muat app sampai "Model siap" 822–868 ms dengan aset lokal. Laptop dan HP belum
+  diukur: butuh perangkat pemilik (`reports/05-performance/performance.md` §3–4).
+- **Temuan:** bundle `ort.webgpu.min.mjs` menarik WASM JSEP ±24 MB (vs 11,9 MB WASM biasa) untuk model
+  63 ribu parameter. Tidak diubah sekarang — keputusan menunggu perbandingan dengan model terlatih.
+- **Deploy:** `.github/workflows/deploy-pages.yml`, hanya `workflow_dispatch`; situs = `app/` tanpa
+  `tests/` dan README (244 KB). Diverifikasi di bawah subpath `/fitness-rep-counter/`: "Model siap",
+  tanpa 404 atau error. **Belum di-deploy** — menunggu persetujuan dan Settings → Pages → Source
+  "GitHub Actions".
+- **Bersih-bersih:** `console.log` hanya di CLI (`evalReps.js`, `checkStructure.js`); tidak ada TODO
+  basi (yang cocok hanya enum `STATUS.TODO` di labeler); tidak ada file sumber > 400 baris; `git ls-files`
+  hanya berisi dua fixture video (380 KB + 156 KB), tanpa `.npz`, checkpoint, atau rahasia. Dua export
+  yang hanya dipakai di file-nya sendiri (`stopSource`, `prefersCpu`) dijadikan privat.
+- **Peta §4 diperbarui:** `eslint.config.js`, `.github/workflows/deploy-pages.yml`, isi `tools/benchmark/`,
+  `tools/checkStructure.test.js`, dan `naivePeakCounter.js` yang sejak Tahap 3 belum tercantum.
+- **Belum diputuskan pemilik:** lisensi kode (file `LICENSE` di root perlu ditambahkan ke peta §4) dan
+  lokasi GIF demo (≤ 5 MB; usul `docs/demo.gif`).
+- **Test:** 263 node:test + 246 pytest lulus; coverage `app/src/core/` 100% baris, 97,5% cabang,
+  99,5% fungsi; `ruff`, ESLint, dan cek struktur bersih.
+
+**Sisa pekerjaan Tahap 5:** setujui & jalankan deploy, isi link demo + GIF, ukur laptop & HP; angka
+README terisi setelah Tahap 1 (training) dan Tahap 2–3 (label → MAE/OBO).
