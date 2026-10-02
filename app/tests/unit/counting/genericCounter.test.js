@@ -242,3 +242,11 @@ test('frame updates never mutate the previous state', () => {
   assert.equal(before.window.length, windowLength);
   assert.ok(Object.isFrozen(before));
 });
+
+test('the counter reports movement while reps happen and stillness at rest', () => {
+  const moving = poseStream({ segments: [{ reps: 3, repSeconds: 2 }], restSeconds: 0, tailSeconds: 0 });
+  assert.equal(countStream(moving).moving, true);
+  const still = poseStream({ segments: [], restSeconds: 6, jitter: 0.002 });
+  assert.equal(countStream(still).moving, false);
+  assert.equal(createGenericCounter().moving, false);
+});

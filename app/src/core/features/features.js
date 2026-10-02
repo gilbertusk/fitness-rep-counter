@@ -239,3 +239,69 @@ export function flipFeatures(window) {
     return out;
   });
 }
+
+// ---------------------------------------------------------------- streaming windows for the browser
+
+// A window is released this many resampled frames after its last frame, so any NaN run of up to
+// MAX_INTERPOLATION_GAP frames touching it can be closed exactly as the offline pipeline closes it.
+const RELEASE_DELAY = MAX_INTERPOLATION_GAP + 1;
+const CONTEXT = MAX_INTERPOLATION_GAP + 1; // rows kept before a window for the same reason
+
+/**
+ * Streaming counterpart of makeWindows(sequenceFeatures(...)): frames go in one at a time, and every
+ * window comes out identical to the offline one (§2, §7, §8) — `features.test.js` pins this to the
+ * golden fixture. Costs 0.4 s of delay per window and one frame of look-ahead for the resampling.
+ */
+export function createWindowStream() {
+  return Object.freeze({ previous: null, nextTickMs: null, startMs: null, rows: Object.freeze([]), offset: 0,
+    nextStart: 0 });
+}
+
+/** Resampled feature rows that frame `current` settles: nearest frame per 1/15 s tick, ties → earlier. */
+function settleTicks(state, current, size) {
+  const step = 1000 / TARGET_FPS;
+  const rows = [];
+  let tick = state.nextTickMs ?? current.timeMs;
+  let k = state.nextTickMs === null ? 0 : Math.round((tick - state.startMs) / step);
+  const startMs = state.startMs ?? current.timeMs;
+  while (tick <= current.timeMs) {
+    const usePrevious = state.previous && tick - state.previous.timeMs <= current.timeMs - tick;
+    const source = usePrevious ? state.previous : current;
+    rows.push(frameFeatures(normalizePoints(selectLandmarks(source.frame, size.width, size.height))));
+    k += 1;
+    tick = startMs + k * step; // computed from the start, like the offline grid, so no drift accumulates
+  }
+  return { rows, nextTickMs: tick, startMs };
+}
+
+function releaseWindows(state, allowTail) {
+  const windows = [];
+  let { nextStart } = state;
+  const total = state.offset + state.rows.length;
+  while (nextStart + WINDOW_FRAMES + (allowTail ? 0 : RELEASE_DELAY) <= total) {
+    const from = Math.max(state.offset, nextStart - CONTEXT);
+    const filled = interpolateGaps(state.rows.slice(from - state.offset, nextStart + WINDOW_FRAMES + RELEASE_DELAY - state.offset));
+    const cut = makeWindows(filled.slice(nextStart - from, nextStart - from + WINDOW_FRAMES));
+    windows.push({ start: nextStart, window: cut.windows[0], missingRatio: cut.missingRatio[0] });
+    nextStart += WINDOW_STRIDE;
+  }
+  const keepFrom = Math.max(state.offset, nextStart - CONTEXT);
+  return { windows, nextStart, rows: Object.freeze(state.rows.slice(keepFrom - state.offset)), offset: keepFrom };
+}
+
+/**
+ * Feed one frame. @returns {{ state: object, windows: Array<{ start: number, window: Float64Array[],
+ * missingRatio: number }> }} usually empty; one entry each time a window is complete
+ */
+export function pushWindowStream(state, frame, timeMs, size) {
+  const current = { frame, timeMs };
+  const settled = settleTicks(state, current, size);
+  const grown = { ...state, ...settled, previous: current, rows: Object.freeze([...state.rows, ...settled.rows]) };
+  const { windows, ...kept } = releaseWindows(grown, false);
+  return { state: Object.freeze({ ...grown, ...kept }), windows };
+}
+
+/** At the end of a video: release the windows still waiting for their delay, as offline would. */
+export function flushWindowStream(state) {
+  return releaseWindows(state, true).windows;
+}

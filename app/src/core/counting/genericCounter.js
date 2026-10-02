@@ -265,6 +265,7 @@ export function createGenericCounter(options = {}) {
     component: null,
     channel: null,
     signal: null,
+    moving: false,
     count: 0,
     repTimes: Object.freeze([]),
   });
@@ -285,8 +286,11 @@ function sampleTick(state, timeMs) {
   const { series, changed, component = state.component, channel = state.channel } = readSignal(state, window);
   const base = changed ? resetZones(state.signalCounter) : state.signalCounter;
   const signalCounter = stepWindow(base, series, timeMs);
+  // "Moving" uses the counter's own stillness floor, so the session's rest detection and the counter
+  // can never disagree about whether the person is exercising.
+  const moving = series.length > 1 && quantile(series, 0.95) - quantile(series, 0.05) >= minAmplitudeOf(state.config);
   return { ...state, smoothedMotion, window, component, channel, signal: series[series.length - 1], signalCounter,
-    count: signalCounter.count, repTimes: signalCounter.repTimes };
+    moving, count: signalCounter.count, repTimes: signalCounter.repTimes };
 }
 
 /**
