@@ -47,10 +47,14 @@ export const COUNTERS = Object.freeze({
   },
 });
 
+// JSON has no NaN, so a missing value arrives as null — and in JavaScript null * 2 is 0, which would
+// read a missing landmark as a point at the image corner. Turn it back into NaN.
+const value = (v) => (v === null || v === undefined ? NaN : v);
+
 /** One frame of data/keypoints_json → MediaPipe-shaped landmarks, or null when no pose was found. */
 export function toLandmarks(frame) {
   if (!frame) return null;
-  return frame.map(([x, y, z, visibility]) => ({ x, y, z, visibility }));
+  return frame.map(([x, y, z, visibility]) => ({ x: value(x), y: value(y), z: value(z), visibility: value(visibility) }));
 }
 
 /**

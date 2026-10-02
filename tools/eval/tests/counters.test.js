@@ -48,6 +48,12 @@ test('a JSON frame becomes MediaPipe-shaped landmarks, and a missing pose stays 
   assert.equal(toLandmarks(null), null);
 });
 
+test('a missing value reads as NaN, never as the zero JavaScript makes of null', () => {
+  const [point] = toLandmarks([[null, 0.2, null, null]]);
+  assert.ok(Number.isNaN(point.x) && Number.isNaN(point.z) && Number.isNaN(point.visibility));
+  assert.equal(point.y, 0.2);
+});
+
 test('generic and naive counters stream a whole video and report rep times', () => {
   const stream = poseStream({ segments: [{ reps: 3, repSeconds: 2 }], jitter: 0.0005 });
   for (const name of ['generic', 'generic-angle', 'naive-peaks']) {
