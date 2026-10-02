@@ -9,7 +9,17 @@
   "scripts": {
     "start": "npx --yes serve -l 5173 app",
     "test": "node --test \"app/tests/unit/**/*.test.js\" \"tools/**/*.test.js\"",
-    "test:coverage": "node --test --experimental-test-coverage \"app/tests/unit/**/*.test.js\" \"tools/**/*.test.js\""
+    "test:coverage": "node --test --experimental-test-coverage \"app/tests/unit/**/*.test.js\" \"tools/**/*.test.js\"",
+    "test:e2e": "playwright test -c app/tests/e2e/playwright.config.js",
+    "lint": "eslint .",
+    "coverage:core": "node --test --experimental-test-coverage --test-coverage-include=\"app/src/core/**\" --test-coverage-lines=80 --test-coverage-branches=80 --test-coverage-functions=80 \"app/tests/unit/**/*.test.js\""
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@mediapipe/tasks-vision": "1.0.1",
+    "@playwright/test": "1.56.1",
+    "eslint": "10.11.0",
+    "globals": "17.13.0"
+  }
 }

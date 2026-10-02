@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  js:
+    name: JS — unit tests, core coverage ≥ 80%, ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      # Fails when app/src/core/ drops below 80% line, branch or function coverage (docs/PLAN.md §6.3).
+      - run: npm run coverage:core
+      - run: npm run lint
+
+  structure:
+    name: Structure — §4 map, core purity, file length, no tracked data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/checkStructure.js
+
+  python:
+    name: Python — pytest (incl. feature parity) + ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: ml/pyproject.toml
+      # MediaPipe's pose tasks need libEGL on Linux.
+      - run: sudo apt-get update && sudo apt-get install -y libegl1
+      # CPU-only torch keeps the install small; the train extra is needed by the model/export tests.
+      - run: pip install -e "ml[dev,train]" --extra-index-url https://download.pytorch.org/whl/cpu
+      - run: pytest ml/tests --cov=repcount --cov-report=term-missing
+      - run: ruff check ml
+
+  e2e:
+    name: E2E — Playwright smoke test (video in, no video out)
+    runs-on: ubuntu-latest
+    needs: js
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

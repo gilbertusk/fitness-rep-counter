@@ -1,0 +1,38 @@
+name: Deploy app to GitHub Pages
+
+# Manual only: run it from the Actions tab once the owner decides to publish.
+# One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      # Only app/ is published (no tests, fixtures or docs). Every path in the app is relative,
+      # so it works under https://<user>.github.io/<repo>/.
+      - name: Assemble the site from app/
+        run: |
+          mkdir _site && cp -R app/. _site/
+          rm -rf _site/tests _site/README.md
+          touch _site/.nojekyll
+          find _site -type f | sort
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

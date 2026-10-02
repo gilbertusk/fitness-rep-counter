@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rep Counter Benchmark</title>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; margin: 0 auto; padding: 16px; max-width: 900px; background: #0f172a; color: #e2e8f0; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    input[type=text] { padding: 6px; min-width: 14rem; }
+    button { padding: 8px 14px; font: inherit; cursor: pointer; }
+    .stage { position: relative; margin-top: 12px; }
+    video, canvas { width: 100%; display: block; }
+    canvas { position: absolute; inset: 0; }
+    pre { white-space: pre-wrap; background: #1e293b; padding: 12px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Benchmark Rep Counter</h1>
+  <p>Mengukur pipeline app yang sebenarnya di perangkat ini. Video tidak dikirim ke mana pun.
+    Cara pakai & cara melaporkan: <code>tools/benchmark/README.md</code>.</p>
+  <div class="controls">
+    <input id="label" type="text" placeholder="Nama perangkat, mis. Pixel 7 / Chrome 140" />
+    <label>Video lain: <input id="video-file" type="file" accept="video/*" /></label>
+    <button id="btn-run" type="button">Mulai benchmark</button>
+    <button id="btn-copy" type="button" disabled>Salin sebagai Markdown</button>
+  </div>
+  <p id="status">Pilih “Mulai benchmark” (default: video fixture push-up).</p>
+  <div class="stage">
+    <video id="video" playsinline muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
+  <pre id="report"></pre>
+  <script type="module" src="src/bench.js"></script>
+</body>
+</html>

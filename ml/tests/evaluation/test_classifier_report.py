@@ -212,3 +212,37 @@ def test_evaluate_all_reports_both_levels_for_every_model():
     assert results["fake"]["video"]["n"] == 3, "three videos, whatever the window count"
     assert results["fake"]["window"]["n"] == n
     assert validation["fake"].shape == (n, len(LABELS))
+
+
+def test_metrics_count_the_test_videos_of_every_class():
+    result = report.metrics(np.array([0, 0, 1]), np.array([0, 1, 1]), ["a", "b", "c"])
+    assert result["per_class_support"] == {"a": 2, "b": 1, "c": 0}
+
+
+def test_pose_quality_is_read_per_class_with_the_dataset_wide_share(tmp_path):
+    path = tmp_path / "pose_quality.csv"
+    path.write_text("label,n_frames,n_detected,detected_pct\na,100,90,90.0\nb,300,300,100.0\n", encoding="utf-8")
+    detection = report.read_pose_detection(path)
+    assert detection["a"] == 90.0 and detection["b"] == 100.0
+    assert detection["__all__"] == 97.5
+    assert report.read_pose_detection(tmp_path / "missing.csv") is None
+
+
+def test_pose_context_only_blames_pose_quality_where_the_numbers_support_it():
+    detection = {"curl": 99.0, "decline": 87.6, "__all__": 97.7}
+    text = report.pose_context([("curl", 0.5), ("decline", 0.57)], detection)[0]
+    assert "curl 99.0%, decline 87.6%" in text
+    assert "bisa ikut menjelaskan: decline." in text
+    assert "**tidak** menjelaskan: curl" in text
+    assert "tidak tersedia" in report.pose_context([("curl", 0.5)], None)[0]
+
+
+def test_the_report_shows_test_support_per_class_and_warns_about_tiny_classes():
+    results = _results(0.7, 0.8)
+    results["temporal (1D-CNN)"]["video"]["per_class_support"] = {label: 1 for label in LABELS}
+    text = report.render_report(results, LABELS, {}, [], {"train": 1, "val": 1, "test": 1}, None,
+                                {label: 99.0 for label in LABELS} | {"__all__": 97.7})
+    assert "| n video test |" in text
+    assert f"| {LABELS[0]} |" in text and "| 1 |" in text
+    assert "jangan dibaca sebagai angka yang presisi" in text
+    assert "Dugaan penyebab" not in text

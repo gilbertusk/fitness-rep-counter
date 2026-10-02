@@ -7,7 +7,7 @@ import {
   TARGET_FPS, WINDOW_FRAMES, WINDOW_STRIDE, MAX_INTERPOLATION_GAP,
   resampleIndices, selectLandmarks, normalizePoints, jointAngles, frameFeatures,
   interpolateGaps, missingFrames, windowStarts, makeWindows, usableWindows,
-  sequenceFeatures, flipFeatures,
+  sequenceFeatures, flipFeatures, createWindowStream, pushWindowStream, flushWindowStream,
 } from '../../../src/core/features/features.js';
 
 const GOLDEN = JSON.parse(readFileSync(new URL('../../fixtures/features_golden.json', import.meta.url), 'utf8'));
@@ -272,4 +272,57 @@ test('flipping a mirrored pose reproduces the original', () => {
 
 test('an empty video produces no features', () => {
   assert.deepEqual(sequenceFeatures([], [], 640, 480), []);
+});
+
+// ---------------------------------------------------------------- streaming windows
+
+function streamGolden(input = GOLDEN.input) {
+  const { landmarks, timestampsMs, width, height } = input;
+  let state = createWindowStream();
+  const released = [];
+  landmarks.forEach((frame, i) => {
+    const out = pushWindowStream(state, toFrame(frame), timestampsMs[i], { width, height });
+    state = out.state;
+    out.windows.forEach((w) => released.push({ ...w, atFrame: i }));
+  });
+  return { released, flushed: flushWindowStream(state) };
+}
+
+test('windows built frame by frame are identical to the offline golden windows', () => {
+  const { released, flushed } = streamGolden();
+  const all = [...released, ...flushed];
+  assert.deepEqual(all.map((w) => w.start), GOLDEN.expected.windowStarts);
+  all.forEach((w, k) => {
+    assertClose(w.missingRatio, GOLDEN.expected.missingRatio[k], GOLDEN.tolerance, `window ${k} missing ratio`);
+    w.window.forEach((row, i) => assertClose(Array.from(row), GOLDEN.expected.windows[k][i], GOLDEN.tolerance,
+      `streamed window ${k} frame ${i}`));
+  });
+});
+
+test('a window is released six resampled frames after its end, never earlier', () => {
+  const { released } = streamGolden();
+  assert.equal(released[0].start, 0);
+  // Window 0 ends at resampled frame 29 and waits for frame 35 (tick at 2333.3 ms). Source frame 70
+  // (2333 ms) supplies it, but the nearest-frame rule can only settle that once frame 71 arrives and
+  // proves to be farther away: the one frame of look-ahead.
+  assert.equal(released[0].atFrame, 71);
+});
+
+test('the stream keeps a bounded history however long it runs', () => {
+  let state = createWindowStream();
+  const frame = toFrame(GOLDEN.input.landmarks[0]);
+  for (let i = 0; i < 3000; i += 1) ({ state } = pushWindowStream(state, frame, i * 33, { width: 1280, height: 720 }));
+  assert.ok(state.rows.length < 60, `${state.rows.length} rows kept`);
+});
+
+test('frames without a pose flow through the stream as missing rows', () => {
+  let state = createWindowStream();
+  const windows = [];
+  for (let i = 0; i < 90; i += 1) {
+    const out = pushWindowStream(state, null, i * 33.3, { width: 640, height: 480 });
+    state = out.state;
+    windows.push(...out.windows);
+  }
+  assert.ok(windows.length >= 1);
+  assert.equal(windows[0].missingRatio, 1);
 });
