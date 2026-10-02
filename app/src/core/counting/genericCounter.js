@@ -57,7 +57,11 @@ const ANGLE_OFFSET = N_POINTS * 2; // angles start here inside a motion vector
 // ---------------------------------------------------------------- numeric helpers
 
 const ema = (previous, value, weight) => (previous === null ? value : weight * value + (1 - weight) * previous);
-const dot = (a, b) => a.reduce((sum, v, i) => sum + v * b[i], 0);
+function dot(a, b) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i += 1) sum += a[i] * b[i];
+  return sum;
+}
 
 function quantile(values, q) {
   const sorted = [...values].sort((a, b) => a - b);
@@ -193,20 +197,23 @@ export function updateSignalCounter(state, value, timeMs) {
 
 // ---------------------------------------------------------------- choosing the signal
 
-/** Leading eigenvector of the window's covariance, warm-started and sign-aligned with `previous`. */
-export function principalComponent(window, previous, iterations = DEFAULTS.powerIterations) {
+/**
+ * Leading eigenvector of the window's covariance, warm-started and sign-aligned with `previous`.
+ * Power iteration with plain loops and one scratch array: this runs on every sample, and the
+ * map/reduce version cost a third of a millisecond per frame.
+ */
+export function principalComponent(window, previous, iterations = DEFAULTS.powerIterations, mean = columnMeans(window)) {
   const dims = window[0].length;
-  const mean = columnMeans(window);
-  const centered = window.map((row) => row.map((v, d) => v - mean[d]));
-
   let vector = previous ? Float64Array.from(previous) : new Float64Array(dims).fill(1 / Math.sqrt(dims));
+  const next = new Float64Array(dims);
   for (let it = 0; it < iterations; it += 1) {
-    const next = new Float64Array(dims);
-    centered.forEach((row) => {
-      const projection = dot(row, vector);
-      row.forEach((v, d) => { next[d] += projection * v; });
-    });
-    const norm = Math.hypot(...next);
+    next.fill(0);
+    for (const row of window) {
+      let projection = 0;
+      for (let d = 0; d < dims; d += 1) projection += (row[d] - mean[d]) * vector[d];
+      for (let d = 0; d < dims; d += 1) next[d] += projection * (row[d] - mean[d]);
+    }
+    const norm = Math.sqrt(dot(next, next));
     if (norm === 0) return previous ?? vector;
     vector = next.map((v) => v / norm);
   }
@@ -237,10 +244,11 @@ function readSignal(state, window) {
     return { channel, changed, series: window.map((row) => row[ANGLE_OFFSET + channel]) };
   }
   if (window.length < 2) return { component: state.component, changed: false, series: [0] };
-  const component = principalComponent(window, state.component, config.powerIterations);
   const mean = columnMeans(window);
+  const component = principalComponent(window, state.component, config.powerIterations, mean);
   const changed = state.component !== null && dot(component, state.component) < config.axisResetDot;
-  return { component, changed, series: window.map((row) => dot(row, component) - dot(mean, component)) };
+  const offset = dot(mean, component);
+  return { component, changed, series: window.map((row) => dot(row, component) - offset) };
 }
 
 // ---------------------------------------------------------------- frame-level counter
