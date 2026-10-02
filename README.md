@@ -2,12 +2,12 @@
 
 > **English summary.** A browser-only workout assistant: MediaPipe Pose runs on the device, one
 > *generic* streaming rep counter works for any exercise without per-exercise thresholds,
-> declarative form rules cover 6 exercises plus a plank hold timer, and a small 1D-CNN (ONNX) is
-> ready to recognise 22 exercises once trained. Video never leaves the device — an end-to-end test
-> checks every request. **Honest status:** the pipeline, tooling, tests and CI are done, but the
-> classifier is not trained yet and the counter has not been scored against human labels, so this
-> README contains **no accuracy numbers**. What *is* measured: pose quality on the dataset
-> (97.7% of frames) and speed (22–23 FPS on a 4-vCPU machine without GPU, ~0.1 ms of app logic per frame).
+> declarative form rules cover 6 exercises plus a plank hold timer, and a small 1D-CNN (ONNX,
+> 0.28 MB) recognises 22 exercises. Video never leaves the device — an end-to-end test
+> checks every request. **Measured:** the exercise classifier reaches **0.822 macro-F1 / 81.7%
+> accuracy at video level on 93 held-out test videos** (22 classes; gradient-boosting baseline 0.756),
+> and the app runs at 10–23 FPS on 4-vCPU cloud machines without GPU, with ~0.1–0.3 ms of app logic
+> per frame. **Not measured yet:** rep-counting accuracy (waiting for human labels) and form-rule accuracy.
 
 Satu kalimat: hitung repetisi dan dapatkan koreksi form dari webcam atau video, **tanpa satu frame
 pun dikirim ke server**.
@@ -23,12 +23,15 @@ Setiap angka menaut ke laporan yang menghasilkannya. Sel "–" = **belum diukur*
 |---|---|---|---|
 | Data | Frame dengan pose terdeteksi (651 video, 22 kelas) | [97,7 %](reports/00-data/pose_quality.md) | Tahap 0 |
 | Data | Split per video & grup near-duplicate (train/val/test) | [453 / 99 / 99](reports/00-data/split.md) | Tahap 0 |
-| Pengenal latihan | Macro-F1, akurasi level video (test) | – (model belum dilatih) | `reports/01-classifier/` dibuat oleh `classifier_report` |
+| Pengenal latihan | Macro-F1 / akurasi, level video, 93 video test (22 kelas) | [**0,822 / 81,7 %**](reports/01-classifier/classifier.md) | Tahap 1 |
+| Pengenal latihan | … baseline gradient boosting, untuk pembanding | [0,756 / 80,6 %](reports/01-classifier/classifier.md) | Tahap 1 |
+| Pengenal latihan | Macro-F1 / akurasi, level window 2 s (606 window test) | [0,761 / 78,7 %](reports/01-classifier/classifier.md) | Tahap 1 |
 | Penghitung repetisi | MAE, OBO vs baseline naive-peaks (test) | – (menunggu label manusia) | `reports/03-rep-counter/` (CSV dari `evalReps.js … --final`) |
 | Aturan form | Akurasi peringatan | – (belum ada video form berlabel) | [`docs/FORM_RULES.md`](docs/FORM_RULES.md) |
-| Performa | FPS end-to-end, 4 vCPU tanpa GPU (headless Chromium) | [22–23 FPS](reports/05-performance/performance.md) | Tahap 5 |
-| Performa | Latensi pose MediaPipe p50 / p95 | [39,7 / 54,0 ms](reports/05-performance/performance.md) | Tahap 5 |
-| Performa | Seluruh logika app per frame (`stepFrame`) p50 / p95 | [0,105 / 0,195 ms](reports/05-performance/performance.md) | Tahap 5 |
+| Performa | FPS end-to-end, 4 vCPU tanpa GPU (headless Chromium, 2 VM berbeda) | [10–23 FPS](reports/05-performance/performance.md) | Tahap 5 |
+| Performa | Latensi pose MediaPipe p50 (VM cepat / VM lambat) | [39,7 / 74–93 ms](reports/05-performance/performance.md) | Tahap 5 |
+| Performa | Seluruh logika app per frame (`stepFrame`) p50 | [0,1–0,5 ms](reports/05-performance/performance.md) | Tahap 5 |
+| Performa | Pengenal latihan per window (model terlatih, sekali per detik) p50 | [1,1 ms](reports/05-performance/performance.md) | Tahap 5 |
 | Performa | FPS laptop / HP | – / – (perlu perangkat nyata) | [cara mengukur](tools/benchmark/README.md) |
 
 ## 2. Arsitektur
@@ -78,7 +81,9 @@ Lengkapnya, dengan angka dan alasan: [`docs/PLAN.md` §8](docs/PLAN.md).
 - **Penghitung generik tanpa threshold per latihan:** proyeksi PCA online (atau sudut sendi paling
   aktif), EMA, histeresis 30/70 %, rep dihitung saat sinyal kembali "pulang". Dievaluasi frame demi
   frame di Node dengan kode yang sama persis dengan app.
-- **Model kecil:** 1D-CNN 63 702 parameter (≈ 0,28 MB ONNX) dipilih atas GRU; latensi 0,8 ms per window.
+- **Model kecil:** 1D-CNN 63 702 parameter (≈ 0,28 MB ONNX) dipilih atas GRU; ±1 ms per window di
+  browser. Mengalahkan baseline gradient boosting di macro-F1 level video (0,822 vs 0,756), tetapi
+  akurasinya hampir sama (81,7 vs 80,6 %): keunggulannya terutama di kelas kecil.
 - **MediaPipe di CPU bila WebGL-nya perangkat lunak** (SwiftShader/llvmpipe): 245 → 35 ms per frame
   di mesin uji, 3–4 → 21–24 FPS.
 - **Aturan form deklaratif:** tiap aturan hanya mengukur bila titiknya sendiri terlihat
@@ -88,17 +93,22 @@ Lengkapnya, dengan angka dan alasan: [`docs/PLAN.md` §8](docs/PLAN.md).
 
 ## 5. Keterbatasan & kegagalan yang diketahui
 
-- **Belum ada angka akurasi** untuk pengenal, penghitung, maupun aturan form (lihat tabel Hasil).
-  Semua latihan berlabel **eksperimental** di app; deteksi otomatis nonaktif sampai model dilatih.
+- **Akurasi penghitung repetisi dan aturan form belum diukur** (lihat tabel Hasil), jadi semua
+  latihan tetap berlabel **eksperimental** di app.
+- Pengenal latihan: kelas terburuk di test (F1 level video) barbell biceps curl 0,50, romanian deadlift
+  0,50, decline bench press 0,57, chest fly machine 0,60, bench press 0,67; bench press paling sering
+  tertukar dengan decline bench press. Test set kecil (93 video, 1–9 per kelas), jadi F1 per kelas
+  kasar — plank bernilai 1,0 dari **satu** video ([laporan](reports/01-classifier/classifier.md)).
+  Ambang "tidak yakin" (keyakinan 0,65, selisih 0,45; dipilih di val untuk akurasi ≥ 90 %) masing-masing
+  menahan ±26 % window val; app memakai keduanya, jadi lebih sering menjawab "tidak yakin" daripada menebak.
 - Pose 2D dari satu kamera: aturan form squat, push-up, curl, deadlift, dan plank butuh kamera dari
   **samping**; app memberi petunjuk bila kamera tampak dari depan. Deadlift hanya proksi 2D.
 - Deteksi pose lemah pada posisi berbaring dan mesin: decline bench press 87,6 %, romanian deadlift
   88,3 % frame terdeteksi; pergelangan kaki paling sering tak terlihat ([laporan](reports/00-data/pose_quality.md)).
-- Kelas yang mirip (bench/incline/decline, biceps/hammer curl, deadlift/RDL) dan kelas kecil
-  (plank 7 video) diperkirakan paling sulit; russian twist (rotasi) sulit dalam 2D.
 - Hanya satu orang per frame. Waktu rep dilaporkan ±0,2 s lebih awal dari tanda manusia.
-- Tanpa GPU, pose ≈ 40 ms > 33 ms per frame video 30 fps → ±22 FPS; HP lemah akan lebih lambat.
-- Runtime ONNX (bundle WebGPU) menarik WASM ±24 MB setelah model ada — kandidat optimisasi
+- Tanpa GPU, pose 40–93 ms per frame (> 33 ms per frame video 30 fps) → 10–23 FPS, tergantung VM;
+  HP lemah bisa lebih lambat.
+- Runtime ONNX (bundle WebGPU) menarik WASM ±24 MB — kandidat optimisasi
   ([performance.md](reports/05-performance/performance.md)).
 - `.MOV` HEVC dari iPhone mungkin tidak bisa diputar di Chrome desktop.
 

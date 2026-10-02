@@ -164,11 +164,11 @@ Aturan kerapian:
 | # | Tahap | Prompt | Output utama | Status |
 |---|---|---|---|---|
 | 0 | Setup & ekstraksi keypoint | `prompts/00-setup-and-extraction.md` | keypoint `.npz`, manifest, laporan kualitas pose, split | ✅ |
-| 1 | Pengenal latihan (22 kelas) | `prompts/01-exercise-classifier.md` | model ONNX, laporan evaluasi, parity test fitur | 🚧 kode siap, **belum dilatih** (lihat §8) |
+| 1 | Pengenal latihan (22 kelas) | `prompts/01-exercise-classifier.md` | model ONNX, laporan evaluasi, parity test fitur | ✅ macro-F1 0,822 level video (test), lihat §8 |
 | 2 | Label repetisi (manusia + alat) | `prompts/02-rep-labeling.md` | alat labeling, `labels/rep_labels.csv` | 🚧 alat siap, menunggu label manusia (lihat §8) |
 | 3 | Penghitung repetisi generik | `prompts/03-generic-rep-counter.md` | `genericCounter.js`, laporan MAE/OBO vs baseline | 🚧 kode & harness siap, **belum dievaluasi** (butuh label Tahap 2, lihat §8) |
-| 4 | Integrasi web app | `prompts/04-web-integration.md` | demo: auto-detect + hitung + form + plank | 🚧 app jalan, **deteksi otomatis menunggu model Tahap 1** (lihat §8) |
-| 5 | Siap dipamerkan | `prompts/05-ship.md` | deploy, CI, benchmark FPS, README final | 🚧 CI, benchmark, README, model card & konfigurasi deploy siap; **menunggu persetujuan deploy, benchmark laptop/HP, dan angka Tahap 1–3** (lihat §8) |
+| 4 | Integrasi web app | `prompts/04-web-integration.md` | demo: auto-detect + hitung + form + plank | ✅ deteksi otomatis aktif; label "eksperimental" menunggu evaluasi Tahap 3 |
+| 5 | Siap dipamerkan | `prompts/05-ship.md` | deploy, CI, benchmark FPS, README final | 🚧 CI, benchmark, README, model card & konfigurasi deploy siap; **menunggu persetujuan deploy, benchmark laptop/HP, dan angka Tahap 2–3** (lihat §8) |
 
 Urutan wajib: 0 → 1 → (2 bisa paralel dengan 1) → 3 → 4 → 5.
 
@@ -473,3 +473,31 @@ diuji dengan skor sintetis — begitu `python -m repcount.export.onnx` dijalanka
 
 **Sisa pekerjaan Tahap 5:** setujui & jalankan deploy, isi link demo + GIF, ukur laptop & HP; angka
 README terisi setelah Tahap 1 (training) dan Tahap 2–3 (label → MAE/OBO).
+
+### 2026-10-02 — Tahap 1 selesai: model dilatih oleh pemilik proyek
+
+- **Run** `data/runs/20261002-1640` di komputer pemilik (dataset hanya ada di sana; container cloud tidak
+  bisa mengakses Kaggle). Window: train 2761, val 738, test 606 dari 93 dari 99 video test.
+- **Val (pemilihan model):** baseline 0,736 akurasi / 0,751 macro-F1 (86 s); temporal 1D-CNN epoch terbaik
+  29 dari 42 (early stopping, patience 12), 0,778 / 0,795 (33 s). Loss train turun terus sejak ±epoch 25
+  sementara val mendatar — overfitting ringan yang dihentikan early stopping.
+- **Test, sekali (`reports/01-classifier/classifier.md`):** level video temporal **0,822 macro-F1 / 81,7 %**
+  vs baseline 0,756 / 80,6 %; level window 0,761 / 78,7 % vs 0,723 / 77,4 %. Keunggulan temporal ada di
+  macro-F1, bukan akurasi → terutama di kelas kecil. Terburuk: biceps curl 0,50, romanian deadlift 0,50,
+  decline bench 0,57, chest fly 0,60, bench press 0,67. Test hanya 1–9 video per kelas.
+- **Ambang "tidak yakin" dari val:** keyakinan 0,65 (cakupan 74 %), selisih 0,45 (cakupan 73 %), target
+  akurasi 90 %. Catatan: disapu pada probabilitas per window, sedangkan app memakainya pada probabilitas
+  yang di-EMA (smoothing 0,4) dan keduanya sekaligus — cakupan nyata di app belum diukur.
+- **Ekspor:** 270 KB, ONNX vs PyTorch beda maks 5,7e-06; 0,08 ms per window di CPU Python, 1,1 ms di browser.
+- **Kesalahan saya, ditemukan saat membaca laporan:** paragraf "Dugaan penyebab" di `classifier_report.py`
+  adalah teks tetap yang ditulis sebelum ada hasil (menyalahkan latihan berbaring). Hasilnya membantah:
+  kelas terburuk, biceps curl, punya deteksi pose 97,8 % (di atas rata-rata dataset). Paragraf itu kini
+  dihitung dari `pose_quality.csv` dan hanya menyatakan kelas mana yang bisa / tidak bisa dijelaskan kualitas
+  pose; tabel F1 per kelas kini menampilkan jumlah video test. **Laporan perlu dibuat ulang** dengan satu
+  perintah `classifier_report` (angka metrik identik; tidak ada keputusan baru dari test).
+- **Integrasi app:** e2e kini memverifikasi deteksi otomatis (video fixture dikenali sebagai Push-up, yakin
+  83 % setelah ±3 s) — **bukan klaim akurasi**, karena `push_up_17` ada di split train. Test baru memastikan
+  tanpa model app tetap menghitung dan tidak mengunduh runtime ONNX. ONNX Runtime menulis peringatan
+  "Unknown CPU vendor" ke `console.error` di VM → adapter kini memakai `ort.env.logLevel = 'error'`.
+- **Benchmark dengan model terlatih** di VM yang ±2× lebih lambat (setelah container dimulai ulang):
+  9,9–11,5 FPS; tanpa model di VM yang sama 10,0 FPS → perlambatan berasal dari VM, bukan model.

@@ -1,8 +1,8 @@
 # Model Card — pengenal latihan & penghitung repetisi
 
-Status per 2026-10-02: **arsitektur, kode training, evaluasi, dan ekspor siap dan ter-test; model
-belum pernah dilatih pada data sungguhan.** Bagian bertanda ⏳ diisi otomatis oleh skrip setelah
-training (lihat "Cara memperbarui"), bukan ditulis tangan.
+Status per 2026-10-02: **pengenal latihan terlatih dan dievaluasi** (run `data/runs/20261002-1640`,
+dilatih oleh pemilik proyek); **penghitung repetisi belum dievaluasi** (menunggu label manusia).
+Semua angka disalin dari laporan yang dihasilkan skrip; bagian ⏳ belum ada laporannya.
 
 ## 1. Ringkasan
 
@@ -28,6 +28,8 @@ training (lihat "Cara memperbarui"), bukan ditulis tangan.
 - Augmentasi saat training: flip kiri↔kanan (p = 0,5), jitter 0,01 unit torso, skala waktu 0,8–1,2.
 - Kualitas pose: 97,7 % frame terdeteksi; terburuk decline bench press 87,6 %
   ([`reports/00-data/pose_quality.md`](../reports/00-data/pose_quality.md)).
+- Window yang benar-benar dipakai (window dengan > 30 % frame hilang dibuang): train 2761, val 738,
+  test 606 dari **93** dari 99 video test ([`classifier.md`](../reports/01-classifier/classifier.md)).
 - Label penghitung repetisi: **hanya dari manusia**, ±104 video val/test, definisi di
   [`labels/README.md`](../labels/README.md). ⏳ belum dibuat.
 
@@ -42,12 +44,15 @@ squat · t_bar_row · tricep_dips · tricep_pushdown
 
 | Metrik | Nilai | Sumber |
 |---|---|---|
-| Macro-F1 & akurasi, level window dan level video (test) | ⏳ | `reports/01-classifier/classifier.md` (dibuat oleh `classifier_report`) |
-| F1 per kelas, confusion matrix | ⏳ | sama |
-| Ambang "tidak yakin" (disapu di val) | ⏳ — sementara placeholder 0,5 / margin 0,15 | `app/models/labels.json` |
+| Macro-F1 / akurasi, level video, 93 video test | **0,822 / 81,7 %** (baseline gradient boosting 0,756 / 80,6 %) | [`classifier.md`](../reports/01-classifier/classifier.md) |
+| Macro-F1 / akurasi, level window, 606 window test | 0,761 / 78,7 % (baseline 0,723 / 77,4 %) | [`classifier.md`](../reports/01-classifier/classifier.md) |
+| Macro-F1 / akurasi, level window, val (pemilihan epoch) | 0,795 / 77,8 % | output `repcount.models.temporal` |
+| F1 per kelas terburuk (level video) | biceps curl 0,50 · romanian deadlift 0,50 · decline bench 0,57 · chest fly 0,60 · bench press 0,67 | [`classifier.md`](../reports/01-classifier/classifier.md) |
+| Ambang "tidak yakin" (disapu di val, akurasi ≥ 90 %) | keyakinan 0,65 (cakupan 74 %) · selisih 0,45 (cakupan 73 %) | [`labels.json`](../app/models/labels.json) |
+| ONNX vs PyTorch, 100 window | beda maks 5,7e-06 (toleransi 1e-04) | [`classifier.md`](../reports/01-classifier/classifier.md) |
 | MAE & OBO penghitung vs baseline naive-peaks, per kelas (test) | ⏳ | `reports/03-rep-counter/reps_*_test.csv` (dibuat oleh `evalReps.js`) → `rep_counter.md` |
-| Latensi pengenal per window (bobot acak, hanya waktu) | 0,8 ms p50 di browser (4 vCPU, tanpa GPU) | [`performance.md`](../reports/05-performance/performance.md) |
-| Latensi penghitung per frame | 0,085 ms p50 / 0,12 ms p95 | [`performance.md`](../reports/05-performance/performance.md) |
+| Latensi pengenal per window | 0,08 ms (Python CPU) · 1,1 ms p50 di browser (4 vCPU, tanpa GPU) | [`classifier.md`](../reports/01-classifier/classifier.md), [`performance.md`](../reports/05-performance/performance.md) |
+| Latensi penghitung per frame | 0,085–0,28 ms p50 (tergantung VM) | [`performance.md`](../reports/05-performance/performance.md) |
 
 ## 5. Batasan
 
@@ -56,8 +61,9 @@ squat · t_bar_row · tricep_dips · tricep_pushdown
 - **Satu orang:** MediaPipe dipakai dengan `numPoses = 1`; orang lain di frame bisa "mencuri" pose.
 - **Pencahayaan & oklusi:** gelap, cahaya dari belakang, pakaian longgar, atau beban/mesin yang menutupi
   sendi menurunkan deteksi (posisi berbaring dan mesin paling buruk di dataset ini).
-- **Kelas mirip:** bench/incline/decline press, biceps/hammer curl, deadlift/romanian deadlift
-  dibedakan oleh detail yang lemah dalam 2D. Russian twist (rotasi) sulit; plank hanya 7 video.
+- **Kelas lemah & test kecil:** lima kelas terburuk di atas; bench press paling sering tertukar dengan
+  decline bench press. Test hanya 1–9 video per kelas, jadi F1 per kelas kasar (plank = 1 video).
+  Dugaan awal bahwa russian twist (rotasi) akan sulit **tidak** terbukti di test (F1 1,0 — tetapi hanya ≤ 2 video).
 - **Domain:** video gym dari YouTube dan HP; perekaman di rumah, sudut tak biasa, atau tubuh di luar
   sebaran dataset belum diuji.
 - **Penghitung:** rep dilaporkan ±0,2 s lebih awal dari tanda manusia. Periode hanya terbaca sampai
