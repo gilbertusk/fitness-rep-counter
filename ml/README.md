@@ -29,6 +29,13 @@ python -m repcount.labels.validate                  # cek labels/rep_labels.csv
 python -m repcount.labels.validate --agreement      # + konsistensi dengan rep_labels_recheck.csv
 ```
 
+Tahap 3 (butuh label Tahap 2; evaluasinya sendiri di Node, lihat `tools/eval/README.md`):
+
+```bash
+python -m repcount.export.keypoints_json            # → data/keypoints_json/ (video berlabel saja)
+python -m repcount.evaluation.rep_plots --traces data/runs/rep_traces_generic_test.json
+```
+
 - `src/repcount/` — kode paket; `tests/` — mencerminkan struktur `src/repcount/`
 - `splits/` — split train/val/test (di-commit)
 - Spesifikasi fitur: `docs/FEATURES.md` — wajib sinkron dengan `app/src/core/features/features.js`

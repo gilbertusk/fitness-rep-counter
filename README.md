@@ -93,6 +93,20 @@ python -m repcount.labels.validate   # cek labels/rep_labels.csv
 
 Definisi satu repetisi per gerakan dan panduan kerja (±2 jam): [`labels/README.md`](labels/README.md).
 
+## Penghitung repetisi generik (Tahap 3 — kode siap, belum dievaluasi)
+
+Satu counter untuk semua latihan tanpa threshold per latihan, streaming frame demi frame
+(`app/src/core/counting/genericCounter.js`), plus harness yang membandingkannya dengan dua baseline.
+**Belum ada angka akurasi**: evaluasinya butuh label Tahap 2. Yang sudah terukur hanya kecepatannya —
+di bawah 0,25 ms per frame (p95) di Node.
+
+```bash
+node tools/eval/evalReps.js --bench                          # kecepatan, tanpa dataset
+node tools/eval/evalReps.js --counter generic --split val    # setelah label & keypoint ada
+```
+
+Petunjuk lengkap: [`tools/eval/README.md`](tools/eval/README.md).
+
 ## Roadmap
 
 - [x] MVP: squat & push-up, penghitung + 2 aturan form, unit test

@@ -65,7 +65,7 @@ fitness-rep-counter/
 │   ├── pose_models/                 # pose_landmarker_lite.task
 │   ├── keypoints/<kelas>/           # <video_id>.npz + manifest.csv, errors.csv
 │   ├── keypoints_json/              # untuk evaluasi di Node
-│   └── runs/<timestamp>/            # checkpoint training
+│   └── runs/                        # <timestamp>/ checkpoint training; rep_traces_*.json (Tahap 3)
 │
 ├── app/                             # 🌐 Web app — folder ini yang di-deploy
 │   ├── index.html
@@ -87,7 +87,7 @@ fitness-rep-counter/
 │   └── tests/
 │       ├── unit/                    # mencerminkan struktur src/core/
 │       ├── e2e/                     # Playwright smoke test
-│       └── fixtures/                # features_golden.json, videos/
+│       └── fixtures/                # features_golden.json, syntheticPose.js, videos/
 │
 ├── ml/                              # 🧠 Pipeline Python
 │   ├── pyproject.toml               # paket `repcount`, dependency di-pin
@@ -159,7 +159,7 @@ Aturan kerapian:
 | 0 | Setup & ekstraksi keypoint | `prompts/00-setup-and-extraction.md` | keypoint `.npz`, manifest, laporan kualitas pose, split | ✅ |
 | 1 | Pengenal latihan (22 kelas) | `prompts/01-exercise-classifier.md` | model ONNX, laporan evaluasi, parity test fitur | 🚧 kode siap, **belum dilatih** (lihat §8) |
 | 2 | Label repetisi (manusia + alat) | `prompts/02-rep-labeling.md` | alat labeling, `labels/rep_labels.csv` | 🚧 alat siap, menunggu label manusia (lihat §8) |
-| 3 | Penghitung repetisi generik | `prompts/03-generic-rep-counter.md` | `genericCounter.js`, laporan MAE/OBO vs baseline | ☐ |
+| 3 | Penghitung repetisi generik | `prompts/03-generic-rep-counter.md` | `genericCounter.js`, laporan MAE/OBO vs baseline | 🚧 kode & harness siap, **belum dievaluasi** (butuh label Tahap 2, lihat §8) |
 | 4 | Integrasi web app | `prompts/04-web-integration.md` | demo: auto-detect + hitung + form + plank | ☐ |
 | 5 | Siap dipamerkan | `prompts/05-ship.md` | deploy, CI, benchmark FPS, README final | ☐ |
 
@@ -298,3 +298,59 @@ dikerjakan tidak punya `data/`. Satu perintah di mesin yang punya data: `python 
 di alat, export → `labels/rep_labels.csv`, lalu `validate`. Minimal 2 hari kemudian: sesi cek ulang
 → `validate --agreement`.
 
+### 2026-10-02 — Tahap 3: penghitung repetisi generik (kode & harness siap, belum dievaluasi)
+
+**Status: 🚧 belum dievaluasi.** Dikerjakan atas permintaan langsung **sebelum Tahap 1 dan 2 selesai**,
+menyimpang dari urutan wajib §5. Akibatnya: tidak ada label (Tahap 2) dan tidak ada keypoint di
+lingkungan ini, jadi **belum ada tuning di val, belum ada angka MAE/OBO, dan belum ada
+`reports/03-rep-counter/`**. Semua angka di bawah berasal dari data sintetis atau pengukuran
+kecepatan — tidak satu pun berkata apa-apa tentang akurasi di dataset asli.
+
+- **Desain counter generik** (`app/src/core/counting/genericCounter.js`): fitur per frame dari
+  `features.js` (x/y 13 landmark + 8 sudut) → resample 15 fps → EMA → window berjalan 4 s → satu
+  sinyal → mesin zona dengan hysteresis (30% / 70% rentang). Rep dihitung saat sinyal **kembali ke
+  sisi awalnya**, sejalan dengan konvensi label. **Penghitungan tidak menunggu periode**: video di
+  dataset ini rata-rata 7,8 s dan sering hanya 1–3 rep, jadi counter yang butuh dua siklus untuk
+  "mengunci" akan kehilangan rep pertama di hampir setiap video. Periode autokorelasi hanya mengatur
+  jarak minimum (0,6 × periode) untuk ayunan dangkal; ayunan penuh (≥ 85% rentang) selalu dihitung.
+- **Dua sinyal, sesuai prompt:** PCA online (iterasi pangkat, *warm start*, tanda diselaraskan) dan
+  sudut sendi paling bervariasi (ganti kanal hanya bila menang 1,5×). Setiap sampel, **seluruh
+  window diproyeksikan ulang** dengan definisi sinyal saat ini, sehingga rentang, periode, dan sisi
+  awal selalu menggambarkan satu sinyal yang konsisten. Pilihan di antara keduanya menunggu val.
+- **Empat cacat desain ditemukan oleh test sintetis dan sapuan acak 300 set, lalu diperbaiki:**
+  1. Vektor gerak yang tidak di-*center* diproyeksikan ke sumbu PCA yang berputar pada derau →
+     **diam terhitung 3 rep**.
+  2. Sisi awal ("home") ditentukan dari satu sampel berderau → kini rata-rata 0,5 s pertama.
+  3. EMA 0,35 meredam rep 0,8 s ke 64% amplitudo (vs 90% untuk rep 2 s), sehingga rep cepat tampak
+     dangkal → kini 0,5 (81% vs 96%), dihitung dari respons frekuensi filter, bukan disetel ke test.
+  4. Home yang terkunci dari jitter tepat di atas ambang diam mengikat gerakan asli yang jauh lebih
+     besar → kini ditinjau ulang bila rentang tumbuh > 2× **sebelum** ada rep; setelah satu rep
+     terhitung, home dibekukan (peninjauan di tengah set terbukti menghilangkan rep).
+  Kedua regression test terakhir dibuktikan **gagal tanpa perbaikannya**.
+- **Hasil sintetis setelah perbaikan:** 300/300 tepat pada sinyal acak; 160/160 pada aliran pose
+  squat dan curl (hanya lengan) acak, untuk kedua sinyal.
+- **Kecepatan (diukur, Node 22, container 4-core, 3× ulang):** generic-PCA rata-rata **0,07–0,11 ms**,
+  p95 0,16–0,24 ms per frame; generic-angle 0,02–0,03 ms. Memenuhi < 1 ms. Maks sesekali ±2 ms
+  (jeda GC/JIT). Jalur PCA sempat 3–4× lebih lambat (alokasi 60 baris per sampel dan satu perkalian
+  titik konstan yang dihitung ulang per baris) — diperbaiki tanpa mengubah perilaku.
+- **Waktu rep dilaporkan ±0,2 s lebih awal** daripada tanda manusia, karena rep dihitung saat sinyal
+  melewati 70% jalan kembali. Disengaja (aplikasi terasa responsif); latensi di laporan akan negatif.
+- **Baseline:** `naive-peaks` (parameter tetap, batas bawah) dan `threshold` (hanya squat & push-up;
+  kelas lain dilaporkan **N/A**, tidak pernah nol). Temuan: siku lurus di dekat 180° hanya bisa
+  terbaca lebih kecil saat ada derau, sehingga sebarannya miring dan lebar (163,6°–178,9° pada jitter
+  0,002) — naive-peaks menghitung rep saat diam, dan di data sintetis menghitung berlebih ±1,6×.
+- **Dua bug sambungan ditemukan oleh uji rantai end-to-end** (npz → JSON → Node → grafik): ekspor
+  membuang seluruh frame bila satu landmark saja NaN (di data sintetis: semua frame), dan JS membaca
+  `null` dari JSON sebagai 0 — landmark hilang akan terbaca sebagai titik di pojok gambar.
+- **Penjaga kejujuran di harness:** `--split test` ditolak tanpa `--final`; `--grid` hanya di val
+  (18 setelan untuk generic, 12 untuk naive-peaks); video berlabel tanpa keypoint dicetak, tidak
+  dilewati diam-diam.
+- **Peta §4 diperbarui:** `app/tests/fixtures/syntheticPose.js` (generator pose sintetis bersama untuk
+  test counter dan harness) dan `data/runs/rep_traces_*.json` (jejak sinyal untuk grafik).
+- **Test:** 245 pytest + 169 node:test lulus; `ruff check ml` bersih. Coverage `genericCounter.js` &
+  `repMetrics.js` 100% baris.
+
+**Sisa pekerjaan Tahap 3** (setelah `labels/rep_labels.csv` ada, di mesin yang punya data):
+`keypoints_json` → `evalReps --grid` untuk `generic` dan `generic-angle` di val → pilih sinyal &
+setelan → `evalReps` keempat counter di val → **sekali** `--split test --final` → `rep_plots` →
+tulis `reports/03-rep-counter/rep_counter.md`.
