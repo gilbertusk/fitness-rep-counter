@@ -80,6 +80,19 @@ Perintah training, evaluasi, dan ekspor ada di [`ml/README.md`](ml/README.md); s
 `data/keypoints/` dari Tahap 0. **Belum ada angka akurasi di repo ini karena model belum pernah
 dilatih** — lihat `docs/PLAN.md` §8 untuk sisa pekerjaannya.
 
+## Label repetisi (Tahap 2 — alat siap, menunggu label manusia)
+
+Ground truth jumlah dan waktu tiap rep untuk ±104 video val/test, sebagai bahan evaluasi penghitung
+repetisi. Labelnya **hanya dari manusia**; repo ini menyediakan alatnya:
+
+```bash
+python -m repcount.labels.select     # → labels/to_label.csv (butuh data/ dari Tahap 0)
+npx serve tools/labeler              # alat labeling di browser, dikendalikan keyboard
+python -m repcount.labels.validate   # cek labels/rep_labels.csv
+```
+
+Definisi satu repetisi per gerakan dan panduan kerja (±2 jam): [`labels/README.md`](labels/README.md).
+
 ## Roadmap
 
 - [x] MVP: squat & push-up, penghitung + 2 aturan form, unit test

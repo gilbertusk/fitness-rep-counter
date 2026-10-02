@@ -117,7 +117,8 @@ fitness-rep-counter/
 ├── labels/                          # ✍️ Label manusia (di-commit)
 │   ├── README.md                    # definisi 1 repetisi & aturan labeling
 │   ├── to_label.csv
-│   └── rep_labels.csv
+│   ├── rep_labels.csv
+│   └── rep_labels_recheck.csv       # label ulang ±10% untuk mengukur konsistensi (Tahap 2)
 │
 ├── reports/                         # 📊 Hasil evaluasi (di-commit), nomor = tahap
 │   ├── 00-data/                     # pose_quality.md/.csv, split.md
@@ -157,7 +158,7 @@ Aturan kerapian:
 |---|---|---|---|---|
 | 0 | Setup & ekstraksi keypoint | `prompts/00-setup-and-extraction.md` | keypoint `.npz`, manifest, laporan kualitas pose, split | ✅ |
 | 1 | Pengenal latihan (22 kelas) | `prompts/01-exercise-classifier.md` | model ONNX, laporan evaluasi, parity test fitur | 🚧 kode siap, **belum dilatih** (lihat §8) |
-| 2 | Label repetisi (manusia + alat) | `prompts/02-rep-labeling.md` | alat labeling, `labels/rep_labels.csv` | ☐ |
+| 2 | Label repetisi (manusia + alat) | `prompts/02-rep-labeling.md` | alat labeling, `labels/rep_labels.csv` | 🚧 alat siap, menunggu label manusia (lihat §8) |
 | 3 | Penghitung repetisi generik | `prompts/03-generic-rep-counter.md` | `genericCounter.js`, laporan MAE/OBO vs baseline | ☐ |
 | 4 | Integrasi web app | `prompts/04-web-integration.md` | demo: auto-detect + hitung + form + plank | ☐ |
 | 5 | Siap dipamerkan | `prompts/05-ship.md` | deploy, CI, benchmark FPS, README final | ☐ |
@@ -252,4 +253,48 @@ dijalankan di mesin yang punya data.
 
 **Sisa pekerjaan Tahap 1** (di mesin yang punya data): jalankan 4 perintah di `ml/README.md`,
 lalu isi `reports/01-classifier/classifier.md`, `app/models/`, dan perbarui Status di §5.
+
+### 2026-10-02 — Tahap 2: alat & label repetisi (alat siap, menunggu label manusia)
+
+**Status: 🚧 alat siap, menunggu label manusia.** Belum ada satu label pun — sesuai §6.4, label
+hanya dari manusia. `labels/to_label.csv` juga **belum ada**: pemilihannya butuh ekstensi & durasi
+per video, yang hanya tersimpan di `data/keypoints/manifest.csv`, dan lingkungan tempat tahap ini
+dikerjakan tidak punya `data/`. Satu perintah di mesin yang punya data: `python -m repcount.labels.select`.
+
+- **Definisi satu rep** (`labels/README.md`): satu siklus penuh, ditandai saat gerakan **kembali ke
+  posisi awal** — momen yang sama dengan saat penghitung Tahap 3 menambah hitungan, sehingga waktu
+  tanda bisa dibandingkan, bukan hanya jumlahnya. Ditulis untuk 22 kelas, plus aturan rep parsial,
+  video terpotong, lengan bergantian (tiap lengan = 1 rep, dicatat `bergantian`), dan plank sebagai
+  durasi tahan.
+- **Konflik aturan, diputuskan:** §4 membatasi README folder ≤ 15 baris, tetapi prompt Tahap 2
+  menaruh definisi 22 gerakan + panduan kerja di `labels/README.md`. Prompt Tahap 2 diikuti (lebih
+  spesifik), daripada membuat berkas baru di luar peta.
+- **Pemilihan video:** maks 5 per kelas dari val + test, serakah dengan prioritas **grup
+  near-duplicate baru** (dua klip dari satu sumber = orang & tempat yang sama, membuang waktu
+  pelabel) → ekstensi baru → durasi terjauh. Generator acak per kelas, jadi daftar satu kelas tidak
+  berubah bila kelas lain berubah. Video tanpa pose sama sekali dikeluarkan. Perkiraan: ±104 video
+  (plank hanya 2, decline_bench_press / romanian_deadlift / russian_twist masing-masing 4).
+- **Berkas baru di peta §4:** `labels/rep_labels_recheck.csv`, untuk sesi cek ulang yang disarankan
+  prompt Tahap 2. Subset ±10%-nya dipilih deterministik di alat dari hash `video_id`, jadi tidak
+  perlu berkas daftar terpisah.
+- **Perkiraan waktu melabel: ±2 jam** + ±15 menit cek ulang. Rata-rata video 7,8 detik
+  (`reports/00-data/pose_quality.csv`), jadi rekaman mentah ±14 menit.
+- **Alat diuji di Chromium sungguhan** dengan Playwright (24/24): pencocokan folder, semua tombol,
+  langkah per frame (33,4 ms pada 29,97 fps), bertahan setelah muat ulang, isolasi mode cek ulang,
+  tanpa error console. **CSV hasil export lolos `repcount.labels.validate` tanpa diubah.**
+  Catatan: Chromium bawaan Playwright tidak punya H.264, jadi alur lengkap diuji dengan salinan
+  WebM dari video fixture; jalur galat diuji dengan MP4 aslinya.
+- **Tiga bug ditemukan oleh pengujian:** status "N dari M video ditemukan" langsung terhapus saat
+  video pertama dibuka (folder yang salah tidak akan ketahuan); `.MOV` HEVC dan `.mp4` hasil
+  konversinya memetakan ke `video_id` yang sama dan yang terakhir terbaca menang (kini `.mp4`
+  diutamakan); dan contoh `--video-id push-up_17` di dokumentasi Tahap 1 salah (yang benar
+  `push_up_17`).
+- **Risiko yang belum bisa diuji:** `.MOV` ponsel dengan codec HEVC mungkin tidak bisa diputar di
+  browser. Alat menampilkan panduan konversi `ffmpeg` bila itu terjadi.
+- **Test:** 233 pytest + 100 node:test lulus; `ruff check ml` bersih. Coverage modul label Python
+  97%, `tools/labeler/src/labels.js` 100% baris.
+
+**Sisa pekerjaan Tahap 2** (manusia, di mesin yang punya data): jalankan `select`, label ±104 video
+di alat, export → `labels/rep_labels.csv`, lalu `validate`. Minimal 2 hari kemudian: sesi cek ulang
+→ `validate --agreement`.
 

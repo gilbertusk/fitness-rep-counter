@@ -21,6 +21,14 @@ python -m repcount.evaluation.classifier_report --run $RUN   # test set dipakai 
 python -m repcount.export.onnx        --run $RUN             # → app/models/
 ```
 
+Tahap 2 (butuh `data/keypoints/manifest.csv`; labelnya dari manusia lewat `tools/labeler/`):
+
+```bash
+python -m repcount.labels.select                    # → labels/to_label.csv
+python -m repcount.labels.validate                  # cek labels/rep_labels.csv
+python -m repcount.labels.validate --agreement      # + konsistensi dengan rep_labels_recheck.csv
+```
+
 - `src/repcount/` — kode paket; `tests/` — mencerminkan struktur `src/repcount/`
 - `splits/` — split train/val/test (di-commit)
 - Spesifikasi fitur: `docs/FEATURES.md` — wajib sinkron dengan `app/src/core/features/features.js`
