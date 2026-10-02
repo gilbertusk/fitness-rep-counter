@@ -1,5 +1,54 @@
 {
-  "labels": [],
-  "thresholds": {},
-  "note": "Belum ada model terlatih (docs/PLAN.md §8, Tahap 1). Berkas ini ditimpa oleh `python -m repcount.export.onnx`, bersama exercise_classifier.onnx. Selama daftar labels kosong, app memakai pemilihan latihan manual."
+  "labels": [
+    "barbell_biceps_curl",
+    "bench_press",
+    "chest_fly_machine",
+    "deadlift",
+    "decline_bench_press",
+    "hammer_curl",
+    "hip_thrust",
+    "incline_bench_press",
+    "lat_pulldown",
+    "lateral_raise",
+    "leg_extension",
+    "leg_raises",
+    "plank",
+    "pull_up",
+    "push_up",
+    "romanian_deadlift",
+    "russian_twist",
+    "shoulder_press",
+    "squat",
+    "t_bar_row",
+    "tricep_dips",
+    "tricep_pushdown"
+  ],
+  "thresholds": {
+    "minConfidence": 0.65,
+    "minMargin": 0.45,
+    "chosenFrom": "validation split",
+    "targetPrecision": 0.9
+  },
+  "window": {
+    "frames": 30,
+    "stride": 15,
+    "features": 47,
+    "targetFps": 15,
+    "spec": "docs/FEATURES.md"
+  },
+  "export": {
+    "command": "python -m repcount.export.onnx",
+    "opset": 18,
+    "modelBytes": 276715,
+    "verification": {
+      "n_windows": 100,
+      "max_abs_difference": 5.7220458984375e-06,
+      "tolerance": 0.0001
+    },
+    "latencyCpu": {
+      "n_runs": 200,
+      "median_ms": 0.07749999895168003,
+      "p95_ms": 0.08953500037023328
+    }
+  }
 }
