@@ -43,6 +43,7 @@ export const DEFAULTS = Object.freeze({
   fallbackGapSeconds: 0.4,     // the gap before a period is known, and the floor for every rep
   channelSwitchRatio: 1.5,     // angle signal: switch joints only when another varies 1.5× more
   axisResetDot: 0.8,           // PCA axis turning further than this means a new movement
+  motionSeconds: 1,            // the `moving` flag reads only the last second of the signal
   powerIterations: 6,
 });
 
@@ -286,9 +287,11 @@ function sampleTick(state, timeMs) {
   const { series, changed, component = state.component, channel = state.channel } = readSignal(state, window);
   const base = changed ? resetZones(state.signalCounter) : state.signalCounter;
   const signalCounter = stepWindow(base, series, timeMs);
-  // "Moving" uses the counter's own stillness floor, so the session's rest detection and the counter
-  // can never disagree about whether the person is exercising.
-  const moving = series.length > 1 && quantile(series, 0.95) - quantile(series, 0.05) >= minAmplitudeOf(state.config);
+  // "Moving" looks at the last second only: the session must notice a rest within its 3 s, and the
+  // full 4 s window would still hold the last rep for 4 s after it ended (≈ 7 s to notice). Half the
+  // stillness floor, because near the turning point of a slow rep one second spans only part of it.
+  const recent = series.slice(-Math.max(2, Math.round(state.config.motionSeconds * state.config.sampleFps)));
+  const moving = recent.length > 1 && Math.max(...recent) - Math.min(...recent) >= 0.5 * minAmplitudeOf(state.config);
   return { ...state, smoothedMotion, window, component, channel, signal: series[series.length - 1], signalCounter,
     moving, count: signalCounter.count, repTimes: signalCounter.repTimes };
 }
