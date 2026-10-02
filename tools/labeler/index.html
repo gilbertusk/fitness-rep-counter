@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rep Labeler</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="toolbar">
+    <h1>Rep Labeler</h1>
+    <label class="button">Muat to_label.csv
+      <input id="to-label-file" type="file" accept=".csv,text/csv" hidden>
+    </label>
+    <label class="button">Pilih folder video
+      <input id="video-folder" type="file" webkitdirectory multiple hidden>
+    </label>
+    <label class="button secondary">Impor label CSV
+      <input id="import-file" type="file" accept=".csv,text/csv" hidden>
+    </label>
+    <label class="field">Nama pelabel
+      <input id="labeler" type="text" placeholder="mis. GK" autocomplete="off">
+    </label>
+    <label class="field checkbox">
+      <input id="recheck-mode" type="checkbox"> Mode cek ulang
+    </label>
+    <button id="export" type="button" class="primary">Export CSV</button>
+  </header>
+
+  <div id="recheck-banner" class="banner" hidden>
+    Mode cek ulang: ±10% video, label sesi utama disembunyikan. Export menyimpan
+    <code>rep_labels_recheck.csv</code>.
+  </div>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <strong id="progress">0 / 0</strong>
+        <label class="checkbox"><input id="only-todo" type="checkbox"> Hanya yang belum</label>
+      </div>
+      <ol id="video-list" class="video-list"></ol>
+      <p id="empty-hint" class="hint">Muat <code>labels/to_label.csv</code>, lalu pilih folder
+        <code>data/workout-videos/</code>.</p>
+    </aside>
+
+    <section class="workspace">
+      <div class="video-head">
+        <span id="video-title">Belum ada video</span>
+        <span id="task-badge" class="badge" hidden></span>
+      </div>
+      <div class="stage">
+        <video id="video" playsinline preload="auto"></video>
+        <p id="video-error" class="video-error" hidden></p>
+      </div>
+      <div id="timeline" class="timeline" title="Klik untuk lompat">
+        <div id="hold-span" class="hold-span" hidden></div>
+        <div id="playhead" class="playhead"></div>
+      </div>
+      <div class="readout">
+        <span>Waktu <strong id="time">0.00 / 0.00 s</strong></span>
+        <span id="count-wrap">Rep <strong id="count">0</strong></span>
+        <span id="hold-wrap" hidden>Tahan <strong id="hold">–</strong></span>
+        <span>Kecepatan <strong id="speed">1×</strong></span>
+      </div>
+      <div class="ambiguous">
+        <label class="checkbox"><input id="ambiguous" type="checkbox"> Ambigu (F)</label>
+        <textarea id="notes" rows="2" placeholder="Catatan — wajib bila ambigu; tulis 'bergantian' atau 'terpotong' bila berlaku"></textarea>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <ul id="problems" class="problems"></ul>
+    </section>
+
+    <aside class="help">
+      <h2>Tombol</h2>
+      <dl>
+        <dt>Spasi</dt><dd>putar / jeda</dd>
+        <dt>← →</dt><dd>mundur / maju 1 frame</dd>
+        <dt>, .</dt><dd>lebih lambat / cepat (0,5× · 1× · 2×)</dd>
+        <dt>R</dt><dd>tandai 1 rep — saat <em>kembali ke posisi awal</em></dd>
+        <dt>Backspace</dt><dd>hapus tanda terakhir</dd>
+        <dt>S / E</dt><dd>plank: mulai / selesai tahan</dd>
+        <dt>F</dt><dd>tandai ambigu + tulis catatan</dd>
+        <dt>N</dt><dd>video berikutnya yang belum</dd>
+        <dt>Esc</dt><dd>keluar dari kolom teks</dd>
+      </dl>
+      <p class="hint">Definisi satu rep per gerakan: <code>labels/README.md</code>.
+        Tersimpan otomatis di browser ini — tetap Export berkala.</p>
+    </aside>
+  </main>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
