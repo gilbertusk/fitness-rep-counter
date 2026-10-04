@@ -513,3 +513,6 @@ README terisi setelah Tahap 1 (training) dan Tahap 2–3 (label → MAE/OBO).
   manual dari `main` (commit `bd1dd68`) dan sukses → https://gilbertusk.github.io/fitness-rep-counter/.
   Situs langsung tidak bisa dibuka dari container pengerjaan (kebijakan jaringan menolak `github.io`), jadi
   verifikasinya: semua langkah workflow sukses, status deployment `success`, dan uji subpath lokal sebelumnya.
+- **Verifikasi situs langsung oleh pemilik (2026-10-04):** di https://gilbertusk.github.io/fitness-rep-counter/
+  "Model siap" muncul dan repetisi terhitung dengan kamera. Perangkat, FPS, dan latihan yang dikenali belum
+  dicatat — menunggu laporan pemilik untuk `reports/05-performance/performance.md`.
