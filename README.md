@@ -12,7 +12,7 @@
 Satu kalimat: hitung repetisi dan dapatkan koreksi form dari webcam atau video, **tanpa satu frame
 pun dikirim ke server**.
 
-> 🔗 **Demo:** _(diisi setelah deploy disetujui — `.github/workflows/deploy-pages.yml`)_ ·
+> 🔗 **Demo:** https://gilbertusk.github.io/fitness-rep-counter/ (Chrome/Edge; izinkan kamera atau pilih video) ·
 > 🎬 **GIF:** _(≤ 5 MB, diisi pemilik proyek)_
 
 ## 1. Hasil

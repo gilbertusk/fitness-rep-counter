@@ -169,7 +169,7 @@ Aturan kerapian:
 | 2 | Label repetisi (manusia + alat) | `prompts/02-rep-labeling.md` | alat labeling, `labels/rep_labels.csv` | 🚧 alat siap, menunggu label manusia (lihat §8) |
 | 3 | Penghitung repetisi generik | `prompts/03-generic-rep-counter.md` | `genericCounter.js`, laporan MAE/OBO vs baseline | 🚧 kode & harness siap, **belum dievaluasi** (butuh label Tahap 2, lihat §8) |
 | 4 | Integrasi web app | `prompts/04-web-integration.md` | demo: auto-detect + hitung + form + plank | ✅ deteksi otomatis aktif; label "eksperimental" menunggu evaluasi Tahap 3 |
-| 5 | Siap dipamerkan | `prompts/05-ship.md` | deploy, CI, benchmark FPS, README final | 🚧 CI, benchmark, README, model card & konfigurasi deploy siap; **menunggu persetujuan deploy, benchmark laptop/HP, dan angka Tahap 2–3** (lihat §8) |
+| 5 | Siap dipamerkan | `prompts/05-ship.md` | deploy, CI, benchmark FPS, README final | 🚧 ter-deploy, CI hijau; **menunggu benchmark laptop/HP, GIF, dan angka Tahap 2–3** (lihat §8) |
 
 Urutan wajib: 0 → 1 → (2 bisa paralel dengan 1) → 3 → 4 → 5.
 
@@ -502,3 +502,14 @@ README terisi setelah Tahap 1 (training) dan Tahap 2–3 (label → MAE/OBO).
   "Unknown CPU vendor" ke `console.error` di VM → adapter kini memakai `ort.env.logLevel = 'error'`.
 - **Benchmark dengan model terlatih** di VM yang ±2× lebih lambat (setelah container dimulai ulang):
   9,9–11,5 FPS; tanpa model di VM yang sama 10,0 FPS → perlambatan berasal dari VM, bukan model.
+
+### 2026-10-04 — Tahap 5: lisensi, merge, deploy
+
+- **Lisensi:** pemilik memilih MIT → `LICENSE` di root (peta §4 & `checkStructure.js` diperbarui).
+- **CI pertama di GitHub** (PR #2, dibuka pemilik): keempat job hijau — JS, Python, struktur, e2e.
+- **PR #2 di-merge ke `main`** atas persetujuan pemilik (merge commit, riwayat utuh), karena environment
+  `github-pages` hanya menerima deploy dari branch default.
+- **Deploy:** pemilik mengaktifkan Pages (Source: GitHub Actions); workflow `deploy-pages.yml` dijalankan
+  manual dari `main` (commit `bd1dd68`) dan sukses → https://gilbertusk.github.io/fitness-rep-counter/.
+  Situs langsung tidak bisa dibuka dari container pengerjaan (kebijakan jaringan menolak `github.io`), jadi
+  verifikasinya: semua langkah workflow sukses, status deployment `success`, dan uji subpath lokal sebelumnya.
