@@ -28,30 +28,32 @@ Model terbaik menurut macro-F1 level video: **temporal (1D-CNN)**.
 
 ## F1 per kelas (level video, model terbaik)
 
-| Kelas | F1 |
-|---|---:|
-| barbell_biceps_curl | 0.500 |
-| bench_press | 0.667 |
-| chest_fly_machine | 0.600 |
-| deadlift | 0.800 |
-| decline_bench_press | 0.571 |
-| hammer_curl | 1.000 |
-| hip_thrust | 1.000 |
-| incline_bench_press | 0.889 |
-| lat_pulldown | 0.933 |
-| lateral_raise | 0.923 |
-| leg_extension | 1.000 |
-| leg_raises | 0.750 |
-| plank | 1.000 |
-| pull_up | 0.857 |
-| push_up | 1.000 |
-| romanian_deadlift | 0.500 |
-| russian_twist | 1.000 |
-| shoulder_press | 0.667 |
-| squat | 0.857 |
-| t_bar_row | 1.000 |
-| tricep_dips | 0.800 |
-| tricep_pushdown | 0.769 |
+| Kelas | F1 | n video test |
+|---|---:|---:|
+| barbell_biceps_curl | 0.500 | 9 |
+| bench_press | 0.667 | 8 |
+| chest_fly_machine | 0.600 | 4 |
+| deadlift | 0.800 | 5 |
+| decline_bench_press | 0.571 | 2 |
+| hammer_curl | 1.000 | 3 |
+| hip_thrust | 1.000 | 3 |
+| incline_bench_press | 0.889 | 4 |
+| lat_pulldown | 0.933 | 7 |
+| lateral_raise | 0.923 | 6 |
+| leg_extension | 1.000 | 4 |
+| leg_raises | 0.750 | 3 |
+| plank | 1.000 | 1 |
+| pull_up | 0.857 | 3 |
+| push_up | 1.000 | 8 |
+| romanian_deadlift | 0.500 | 2 |
+| russian_twist | 1.000 | 2 |
+| shoulder_press | 0.667 | 3 |
+| squat | 0.857 | 4 |
+| t_bar_row | 1.000 | 3 |
+| tricep_dips | 0.800 | 3 |
+| tricep_pushdown | 0.769 | 6 |
+
+Kelas dengan ≤ 2 video test hanya bisa bernilai 0, 0,5, 0,67, atau 1 — jangan dibaca sebagai angka yang presisi.
 
 Lima kelas terburuk: barbell_biceps_curl (0.50), romanian_deadlift (0.50), decline_bench_press (0.57), chest_fly_machine (0.60), bench_press (0.67).
 
@@ -65,7 +67,7 @@ Lima kelas terburuk: barbell_biceps_curl (0.50), romanian_deadlift (0.50), decli
 | barbell_biceps_curl | decline_bench_press | 1 | 11% |
 | barbell_biceps_curl | tricep_pushdown | 1 | 11% |
 
-Dugaan penyebab dikaitkan dengan `reports/00-data/pose_quality.md`: kelas dengan deteksi pose terburuk (decline_bench_press 87,6%, romanian_deadlift 88,3%, bench_press 91,7%) adalah latihan berbaring dan mesin, di mana pose 2D dari satu kamera sulit membedakan sudut bangku.
+Deteksi pose kelas-kelas terburuk (Tahap 0, `reports/00-data/pose_quality.md`; seluruh dataset 97.7%): barbell_biceps_curl 97.8%, romanian_deadlift 88.3%, decline_bench_press 87.6%, chest_fly_machine 99.9%, bench_press 91.7%. Di bawah rata-rata dataset, jadi pose yang hilang bisa ikut menjelaskan: romanian_deadlift, decline_bench_press, bench_press. Di atas rata-rata dataset, jadi kualitas deteksi pose **tidak** menjelaskan: barbell_biceps_curl, chest_fly_machine — penyebabnya harus dicari di kelas yang tertukar dan videonya.
 
 ![Confusion matrix](figures/confusion_matrix.png)
 
