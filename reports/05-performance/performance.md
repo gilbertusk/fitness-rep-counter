@@ -9,6 +9,7 @@ definisi tiap angka: `tools/benchmark/README.md`.
 |---|---:|---:|---:|---|
 | Container cloud, VM A — 4 vCPU, **tanpa GPU** (headless Chromium 141) | 22–23 | 39.7 / 54.0 ms | 0.105 / 0.195 ms | ✅ diukur (§1) |
 | Container cloud, VM B — 4 vCPU, tanpa GPU, **model terlatih** | 9.9–11.5 | 74–93 / 118–127 ms | 0.26–0.50 / 0.64–0.91 ms | ✅ diukur (§1b) |
+| Container cloud, VM C — model terlatih, runtime ONNX WASM | 18.2 | 50.4 / 65.8 ms | lihat §2 | ✅ diukur (§2) |
 | Laptop | – | – | – | ⏳ belum diukur — perlu pemilik proyek |
 | HP (Android, Chrome) | – | – | – | ⏳ belum diukur — perlu pemilik proyek |
 
@@ -151,17 +152,61 @@ bersama bisa berbeda 2× antar-sesi — angka laptop dan HP (§3–4) yang menen
 | Model pose `pose_landmarker_lite.task` | 5,78 MB | selalu |
 | MediaPipe WASM (SIMD) + JS | 11,76 + 0,48 MB | selalu |
 | Kode app (24 file JS/CSS/HTML/JSON) | 0,08 MB | selalu |
-| ONNX Runtime WASM (`ort-wasm-simd-threaded.jsep.wasm`) + JS | 23,8–25,5 + 0,12 MB | hanya bila model pengenal ada |
+| ONNX Runtime WASM (`ort-wasm-simd-threaded.wasm`, bundle WASM) + JS | 11,9 + 0,07 MB (dulu 25,5 MB dengan bundle WebGPU) | hanya bila model pengenal ada |
 | Model pengenal (temporal, 63 702 parameter) | 0,28 MB | hanya bila model pengenal ada |
 
 Ini ukuran file **tanpa kompresi HTTP** (headless menyajikannya dari disk). CDN jsDelivr mengirim
 dengan kompresi, jadi unduhan nyata lebih kecil — belum diukur karena CDN diblokir di container ini.
 Ukur di laptop: DevTools → Network → kolom *Transferred*, "Disable cache", throttling "Fast 4G".
 
-**Temuan:** bundle `ort.webgpu.min.mjs` menarik WASM JSEP ≈ 24 MB, dua kali WASM biasa (11,9 MB),
-padahal model 63 ribu parameter berjalan 0,8 ms di CPU. Setelah ada model terlatih, pertimbangkan
-`ort.wasm.min.mjs` (WASM saja) — keputusan ditunda sampai latensi WebGPU vs WASM bisa dibandingkan
-dengan model sungguhan.
+**Temuan (sudah ditindaklanjuti 2026-10-04):** bundle `ort.webgpu.min.mjs` ternyata menarik WASM
+*asyncify* 25,5 MB untuk model 63 ribu parameter. App kini memakai `ort.wasm.min.mjs` (provider `wasm`
+saja) → WASM **11,9 MB**, latensi pengenal tidak memburuk. Diukur di VM C (sesi lain lagi):
+
+```bash
+node tools/benchmark/headless.js --repeat 5
+```
+
+### Headless Chromium (CPU) — 2026-10-04
+
+- Browser: `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.7390.37 Safari/537.36`
+- CPU logis: 4 · Delegate MediaPipe: **CPU** · WebGL: `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)`
+- Video: push-up_17.webm (640×360, 3.0 s × 5 putaran)
+
+| Ukuran | Nilai |
+|---|---|
+| FPS end-to-end (pose + core + overlay) | **18.2** (dibatasi FPS video ≈ 30) |
+| Frame diproses | 281 (281 dengan pose) |
+| Muat model pose (dari buka halaman) | 823.9 ms |
+| Pose pertama terdeteksi (dari buka halaman) | 1843.5 ms |
+| Muat pengenal latihan | 1417.7 ms |
+
+| Tahap (ms per panggilan) | n | median | p95 | maks |
+|---|---:|---:|---:|---:|
+| Pose (MediaPipe detectForVideo) | 281 | 50.4 | 65.8 | 373.5 |
+| Fitur (pushWindowStream) | 281 | 0.005 | 0.060 | 0.155 |
+| Penghitung (updateGenericCounter) | 281 | 0.115 | 0.140 | 0.330 |
+| Core total (stepFrame: fitur + counter + form + sesi) | 281 | 0.145 | 0.245 | 0.470 |
+| Pengenal (ONNX, per window) | 14 | 0.700 | 4.9 | 11.6 |
+| Frame utuh (pose + stepFrame + overlay) | 281 | 50.9 | 66.3 | 376.9 |
+
+| Aset | File | Unduh (MB) | Setelah dekompresi (MB) |
+|---|---:|---:|---:|
+| Model pose (.task) | 1 | 5.78 | 5.78 |
+| MediaPipe WASM | 1 | 11.76 | 11.76 |
+| MediaPipe JS | 2 | 0.48 | 0.48 |
+| ONNX Runtime WASM | 1 | 11.91 | 11.91 |
+| ONNX Runtime JS | 2 | 0.07 | 0.07 |
+| Model pengenal (.onnx) | 1 | 0.28 | 0.28 |
+| Kode app (JS/CSS/HTML/JSON) | 26 | 0.08 | 0.08 |
+
+> Repetisi terhitung sepanjang benchmark (video diputar 5×): 5 — angka ini bukan evaluasi akurasi.
+
+> App: buka halaman → "Model siap" (cache dingin): 1532 ms.
+
+Dibanding run bermodel sebelumnya (bundle WebGPU, VM B): ONNX Runtime WASM 25,50 → 11,91 MB; pengenal p50
+1,1 → 0,7 ms. FPS dan waktu muat juga lebih baik, tetapi VM-nya berbeda, jadi itu **bukan** bukti efek
+bundle — hanya ukuran unduhan yang bisa dibandingkan langsung.
 
 Muat pertama app (buka `app/` → "Model siap", cache dingin, aset lokal): 822–868 ms di VM A tanpa model
 (2 run); 3,8–4,6 s di VM B dengan model terlatih (3 run) — termasuk memuat ONNX Runtime ±25 MB.

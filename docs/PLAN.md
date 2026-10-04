@@ -139,6 +139,7 @@ fitness-rep-counter/
     ├── FEATURES.md
     ├── FORM_RULES.md
     ├── MODEL_CARD.md
+    ├── images/                      # tangkapan layar untuk README (app asli, bukan mock-up)
     └── prompts/                     # 00-…05-… prompt per tahap
 ```
 
@@ -516,3 +517,17 @@ README terisi setelah Tahap 1 (training) dan Tahap 2–3 (label → MAE/OBO).
 - **Verifikasi situs langsung oleh pemilik (2026-10-04):** di https://gilbertusk.github.io/fitness-rep-counter/
   "Model siap" muncul dan repetisi terhitung dengan kamera. Perangkat, FPS, dan latihan yang dikenali belum
   dicatat — menunggu laporan pemilik untuk `reports/05-performance/performance.md`.
+
+### 2026-10-04 — UI baru, runtime ONNX lebih kecil, README lengkap
+
+- **UI baru** dari mock-up Google Stitch milik pemilik (PR #4, di-deploy). Placeholder mock-up yang tidak
+  punya data (sudut pinggul, fase konsentrik, target 12 rep, "92% form", BlazePose v2.4, halaman lain)
+  diganti nilai yang benar-benar diukur: keypoint terlihat, durasi set, rep dengan peringatan, delegate
+  MediaPipe. Tanpa CDN CSS/font/ikon, sehingga pemeriksaan privasi e2e tetap lulus. Core mendapat
+  `countVisible()` dan field view `visibleKeypoints`, `setDurationMs`, `repsWithWarning`, `rest` (ter-test).
+- **Runtime ONNX:** `ort.webgpu.min.mjs` → `ort.wasm.min.mjs`, provider `wasm` saja. WASM yang diunduh
+  25,5 → 11,9 MB; pengenal p50 0,7 ms (sebelumnya 1,1 ms di VM lain). Menutup temuan Tahap 5.
+- **README ditulis ulang lengkap** (fitur, cara pakai, hasil, cara kerja, teknologi, reproduksi termasuk
+  PowerShell, pengujian/CI/deploy, struktur, keputusan, keterbatasan, status, privasi, kredit) dengan
+  tangkapan layar app asli di `docs/images/` (folder baru di peta §4).
+- **Yang tetap butuh pemilik:** label repetisi (→ MAE/OBO, Tahap 2–3), GIF demo, benchmark laptop/HP.
