@@ -40,7 +40,7 @@ export async function createExerciseClassifier({
   ort.env.wasm.wasmPaths = ONNXRUNTIME_WASM_URL;
   // Warnings (e.g. "Unknown CPU vendor" in VMs) go to console.error and mean nothing to the user.
   ort.env.logLevel = 'error';
-  const session = await ort.InferenceSession.create(modelUrl, { executionProviders: ['webgpu', 'wasm'] });
+  const session = await ort.InferenceSession.create(modelUrl, { executionProviders: ['wasm'] });
 
   const [inputName] = session.inputNames;
   const [outputName] = session.outputNames;

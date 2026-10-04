@@ -13,7 +13,7 @@ Semua angka disalin dari laporan yang dihasilkan skrip; bagian ⏳ belum ada lap
 | Ukuran | 63 702 parameter, ≈ 0,28 MB ONNX (opset 18, float32) | – |
 | Input | `[batch, 30, 47]`: 30 frame @ 15 fps × (13 landmark × x, y, visibility + 8 sudut) — [`FEATURES.md`](FEATURES.md) | 33 landmark mentah per frame |
 | Output | skor 22 kelas → `classifier.js`: smoothing EMA + "tidak yakin" | jumlah rep, waktu tiap rep, status bergerak/diam |
-| Runtime | `onnxruntime-web` 1.23.2 di browser (WebGPU, fallback WASM) | JS murni, ≈ 0,1 ms per frame |
+| Runtime | `onnxruntime-web` 1.23.2 di browser (bundle WASM, 11,9 MB) | JS murni, ≈ 0,1 ms per frame |
 | Keypoint | MediaPipe `pose_landmarker_lite` float16 v1 — sama untuk training dan browser | sama |
 
 ## 2. Data latih
