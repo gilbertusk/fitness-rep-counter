@@ -3,77 +3,161 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
   <title>Rep Counter</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="app">
-    <header>
-      <h1>Rep Counter</h1>
-      <p class="subtitle">Kenali latihan, hitung repetisi & cek form langsung di browser. Video tidak pernah dikirim ke server.</p>
-    </header>
+  <!-- Icons: inline so the page needs no font or icon CDN (no extra host besides the model's). -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-logo" viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 6-8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="17" r="2.2" fill="#f97316"/><circle cx="18" cy="6" r="2.2" fill="#4ae176"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2" fill="currentColor"/><path d="M16 10l6-3v10l-6-3z" fill="currentColor"/></symbol>
+      <symbol id="i-flip" viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6l-5 4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v5M12 18v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12l3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-history" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v5h5M12 8v4l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-chip" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+      <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 9v4l2.5 2M9 2h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    </defs>
+  </svg>
 
-    <section class="controls">
-      <label>
-        Latihan
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo"><svg><use href="#i-logo"/></svg></span>
+      <div>
+        <h1>Rep Counter <span class="chip">AI vision</span></h1>
+        <p class="subtitle">Kenali latihan, hitung repetisi &amp; cek form langsung di browser.</p>
+      </div>
+    </div>
+    <span class="privacy"><span class="dot"></span><svg class="icon"><use href="#i-lock"/></svg>Video tidak pernah dikirim ke server</span>
+  </header>
+
+  <main class="app">
+    <section class="controls" aria-label="Kontrol">
+      <label class="select">
+        <svg class="icon accent"><use href="#i-dumbbell"/></svg>
+        <span class="select-label">Latihan:</span>
         <select id="exercise">
           <option value="auto">Otomatis</option>
         </select>
       </label>
-      <button id="btn-camera" type="button" disabled>Nyalakan kamera</button>
-      <button id="btn-facing" type="button" class="secondary" disabled>Kamera belakang</button>
-      <label class="file-button">
-        Pakai video
+      <button id="btn-camera" type="button" class="primary" disabled><svg class="icon"><use href="#i-camera"/></svg><span>Nyalakan kamera</span></button>
+      <button id="btn-facing" type="button" class="secondary" disabled><svg class="icon"><use href="#i-flip"/></svg><span>Kamera belakang</span></button>
+      <label class="file-button secondary">
+        <svg class="icon"><use href="#i-upload"/></svg><span>Pakai video</span>
         <input id="video-file" type="file" accept="video/*" disabled />
       </label>
-      <button id="btn-reset" type="button" class="secondary">Set baru</button>
-      <label class="toggle"><input id="speech" type="checkbox" checked /> Suara</label>
+      <button id="btn-reset" type="button" class="secondary"><svg class="icon"><use href="#i-refresh"/></svg><span>Set baru</span></button>
+      <label class="switch"><svg class="icon accent"><use href="#i-volume"/></svg><span>Suara</span><input id="speech" type="checkbox" checked /><span class="track" aria-hidden="true"></span></label>
     </section>
 
     <p id="model-status" class="model-status" hidden></p>
 
-    <section class="stage">
-      <video id="video" playsinline muted></video>
-      <canvas id="overlay"></canvas>
-      <p id="status" class="status">Memuat model pose…</p>
-      <span id="fps" class="fps"></span>
-    </section>
+    <div id="rest-banner" class="rest-banner" hidden>
+      <svg class="icon"><use href="#i-check"/></svg>
+      <span>Set selesai: <strong id="rest-set"></strong></span>
+      <span class="rest-time"><svg class="icon"><use href="#i-timer"/></svg>Istirahat <strong id="rest-time">0:00</strong></span>
+    </div>
 
-    <section class="stats">
-      <div class="stat">
-        <span class="stat-label">Tahap</span>
-        <span id="phase" class="stat-text">Siap</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">Latihan</span>
-        <span id="exercise-name" class="stat-text">–</span>
-        <span id="exercise-meta" class="stat-meta"></span>
-      </div>
-      <div class="stat" id="reps-card">
-        <span class="stat-label">Repetisi</span>
-        <span id="count" class="stat-value">0</span>
-      </div>
-      <div class="stat" id="hold-card" hidden>
-        <span class="stat-label">Tahan (terbaik)</span>
-        <span id="hold" class="stat-value">0:00</span>
-        <span id="hold-best" class="stat-meta"></span>
-      </div>
-      <div class="stat wide">
-        <span class="stat-label">Koreksi form</span>
-        <ul id="warnings" class="warnings"></ul>
-        <span id="form-note" class="stat-meta"></span>
-      </div>
-    </section>
+    <div class="layout">
+      <div class="main-col">
+        <section class="stage">
+          <video id="video" playsinline muted></video>
+          <canvas id="overlay"></canvas>
+          <span id="engine" class="tag tag-left"><svg class="icon accent"><use href="#i-chip"/></svg>MediaPipe Pose · lokal</span>
+          <span id="fps" class="tag tag-right fps"></span>
+          <p id="status" class="status">Memuat model pose…</p>
+          <div id="stage-empty" class="stage-empty">
+            <svg class="pose-illustration" viewBox="0 0 120 120" aria-hidden="true">
+              <rect x="6" y="38" width="22" height="16" rx="3" fill="none" stroke="#4d8eff" stroke-width="2.5"/><path d="M28 43l7-4v14l-7-4" fill="#4d8eff"/>
+              <path d="M40 46l25 6" stroke="#424754" stroke-width="2" stroke-dasharray="3 4"/>
+              <circle cx="82" cy="24" r="7" fill="#f97316"/><path d="M82 32v30l-8 22v22M82 62l8 22v22M82 40l-12 14M82 40l12 12" fill="none" stroke="#4d8eff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <ol class="tips">
+              <li>Berdiri menyamping ke kamera</li>
+              <li>Seluruh badan terlihat</li>
+              <li>Mulai bergerak — latihan dikenali otomatis</li>
+            </ol>
+            <button id="btn-camera-hero" type="button" class="primary large" disabled><svg class="icon"><use href="#i-camera"/></svg><span>Nyalakan kamera</span></button>
+          </div>
+        </section>
 
-    <section class="history">
+        <div class="telemetry">
+          <div class="tile"><svg class="icon accent"><use href="#i-target"/></svg><div><span class="label">Keypoint terlihat</span><span id="keypoints" class="value">–</span></div></div>
+          <div class="tile"><svg class="icon good"><use href="#i-timer"/></svg><div><span class="label">Durasi set</span><span id="set-time" class="value">–</span></div></div>
+          <div class="tile"><svg class="icon warn"><use href="#i-alert"/></svg><div><span class="label">Rep dengan peringatan</span><span id="reps-warned" class="value">–</span></div></div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <div class="card-head"><span class="label">Tahap sesi</span><span id="phase" class="phase">Siap</span></div>
+          <ol id="stepper" class="stepper" data-phase="idle">
+            <li data-step="idle">Siap</li>
+            <li data-step="detecting">Kenali</li>
+            <li data-step="counting">Hitung</li>
+            <li data-step="resting">Istirahat</li>
+          </ol>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><span class="label">Latihan</span><span id="mode-chip" class="chip">Auto detect</span></div>
+          <h2 id="exercise-name" class="exercise">–</h2>
+          <div id="confidence-row" class="confidence" hidden>
+            <div class="confidence-head"><span class="label">Keyakinan model</span><span id="confidence-text" class="good-text"></span></div>
+            <div class="bar"><div id="confidence-bar"></div></div>
+          </div>
+          <span id="exercise-meta" class="meta-badge"></span>
+        </section>
+
+        <section class="card hero" id="reps-card">
+          <div class="card-head"><span class="label">Repetisi</span></div>
+          <div class="ring">
+            <svg viewBox="0 0 160 160" aria-hidden="true"><circle class="ring-track" cx="80" cy="80" r="68"/><circle id="reps-ring" class="ring-arc" cx="80" cy="80" r="68"/></svg>
+            <span id="count" class="big-number">0</span>
+          </div>
+          <span id="reps-note" class="stat-meta"></span>
+        </section>
+
+        <section class="card hero" id="hold-card" hidden>
+          <div class="card-head"><span class="label">Tahan</span></div>
+          <div class="ring">
+            <svg viewBox="0 0 160 160" aria-hidden="true"><circle class="ring-track" cx="80" cy="80" r="68"/><circle class="ring-arc steady" cx="80" cy="80" r="68"/></svg>
+            <span id="hold" class="big-number timer">0:00</span>
+          </div>
+          <span id="hold-best" class="stat-meta"></span>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><span class="label">Koreksi form</span></div>
+          <ul id="warnings" class="warnings"></ul>
+          <span id="form-note" class="form-note">Pilih atau tunggu latihan dikenali untuk koreksi form.</span>
+        </section>
+      </aside>
+    </div>
+
+    <section class="card history">
       <div class="history-head">
-        <h2>Riwayat set</h2>
-        <button id="btn-clear" type="button" class="secondary">Hapus riwayat</button>
+        <span class="history-title"><span class="icon-box"><svg class="icon accent"><use href="#i-history"/></svg></span><h2>Riwayat set</h2><span id="history-count" class="label"></span></span>
+        <button id="btn-clear" type="button" class="secondary small"><svg class="icon"><use href="#i-trash"/></svg><span>Hapus riwayat</span></button>
       </div>
       <ol id="history" class="history-list"></ol>
       <p id="history-empty" class="stat-meta">Belum ada set yang selesai.</p>
     </section>
   </main>
+
+  <footer class="footer">
+    <span><svg class="icon good"><use href="#i-lock"/></svg>Semua pemrosesan di browser — MediaPipe Pose &amp; ONNX Runtime Web</span>
+    <span><a href="https://github.com/gilbertusk/fitness-rep-counter">Kode sumber</a> · MIT</span>
+  </footer>
 
   <script type="module" src="src/main.js"></script>
 </body>

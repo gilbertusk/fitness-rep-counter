@@ -5,7 +5,9 @@ import { CATALOG, exerciseName } from '../exercises.js';
 import { createWindowStream, pushWindowStream } from '../features/features.js';
 import { filterPose } from '../geometry/oneEuroFilter.js';
 import { createDebounce, updateDebounce } from '../form/debounce.js';
-import { evaluateForm, brokenRules, inPosition, createRepCheck, updateRepCheck, assessPoseQuality } from '../form/measure.js';
+import {
+  evaluateForm, brokenRules, inPosition, createRepCheck, updateRepCheck, assessPoseQuality, countVisible,
+} from '../form/measure.js';
 import { rulesFor } from '../form/rules/index.js';
 import {
   PHASE, createSession, startSession, stopSession, overrideExercise, onPrediction, onFrame, clearHistory,
@@ -131,13 +133,22 @@ export function stepFrame(state, { frame, timeMs, size }) {
     repWarning: form.repWarning, visible: form.visible, hold, session, speech, lastTimeMs: timeMs, fps });
   return {
     state: next,
-    view: viewOf(next, { smoothed, label, ruleSet, warnings: form.warnings, formChecked: form.checked, size, raw: frame }),
+    view: viewOf(next, { smoothed, label, ruleSet, warnings: form.warnings, formChecked: form.checked, size, raw: frame, timeMs }),
     effects: { speak: text, classify: windows, closedSets: session.sets.slice(base.session.sets.length) },
   };
 }
 
-function viewOf(state, { smoothed, label, ruleSet, warnings, formChecked, size, raw }) {
+/** The set that just ended, while resting after it: what the "set selesai" banner and rest timer show. */
+function restOf(session, timeMs) {
+  const last = session.sets[session.sets.length - 1];
+  if (session.phase !== PHASE.RESTING || !last) return null;
+  return Object.freeze({ sinceMs: timeMs - last.endMs, label: last.label, name: last.label ? exerciseName(last.label) : null,
+    reps: last.reps, holdMs: last.holdMs });
+}
+
+function viewOf(state, { smoothed, label, ruleSet, warnings, formChecked, size, raw, timeMs }) {
   const entry = CATALOG[label] ?? null;
+  const { set } = state.session;
   return Object.freeze({
     phase: state.session.phase,
     manual: state.session.manual,
@@ -149,7 +160,11 @@ function viewOf(state, { smoothed, label, ruleSet, warnings, formChecked, size, 
     note: entry?.note ?? null,
     confidence: state.session.phase === PHASE.COUNTING && !state.session.manual ? state.session.set?.confidence ?? null : null,
     candidate: state.session.phase === PHASE.DETECTING ? state.session.candidate : null,
-    reps: state.session.set?.reps ?? 0,
+    reps: set?.reps ?? 0,
+    repsWithWarning: set?.repsWithWarning ?? 0,
+    setDurationMs: set ? timeMs - set.startMs : null,
+    rest: restOf(state.session, timeMs),
+    visibleKeypoints: countVisible(raw),
     hold: { holding: state.hold.holding, currentMs: state.hold.currentMs, bestMs: state.hold.bestMs },
     warnings: Object.freeze(warnings),
     hasRules: ruleSet !== null,

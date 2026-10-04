@@ -22,7 +22,11 @@ const ui = {
   phase: $('phase'), exerciseName: $('exercise-name'), exerciseMeta: $('exercise-meta'),
   repsCard: $('reps-card'), count: $('count'), holdCard: $('hold-card'), hold: $('hold'), holdBest: $('hold-best'),
   warnings: $('warnings'), formNote: $('form-note'),
-  history: $('history'), historyEmpty: $('history-empty'), clearButton: $('btn-clear'),
+  history: $('history'), historyEmpty: $('history-empty'), clearButton: $('btn-clear'), historyCount: $('history-count'),
+  stepper: $('stepper'), modeChip: $('mode-chip'), confidenceRow: $('confidence-row'), confidenceText: $('confidence-text'),
+  confidenceBar: $('confidence-bar'), repsRing: $('reps-ring'), repsNote: $('reps-note'), restBanner: $('rest-banner'),
+  restSet: $('rest-set'), restTime: $('rest-time'), keypoints: $('keypoints'), setTime: $('set-time'),
+  repsWarned: $('reps-warned'), engine: $('engine'), heroCamera: $('btn-camera-hero'),
 };
 
 const speaker = createSpeaker();
@@ -47,6 +51,7 @@ function fillExerciseMenu() {
 async function loadModels() {
   const pose = await createPoseLandmarker();
   detectPose = pose.detect;
+  ui.engine.lastChild.textContent = `MediaPipe Pose · ${pose.delegate} · lokal`;
   drawPose = createPoseRenderer(ui.canvas, pose.vision);
   try {
     classifier = await createExerciseClassifier();
@@ -85,7 +90,7 @@ function keepHistory(closedSets) {
   if (!closedSets.length) return;
   history = [...history, ...closedSets.map((set) => ({ ...set, savedAt: Date.now() }))];
   saveHistory(history);
-  renderHistory(ui.history, ui.historyEmpty, history);
+  renderHistory(ui.history, ui.historyEmpty, history, ui.historyCount, true);
 }
 
 function processFrame() {
@@ -112,6 +117,7 @@ async function useCamera() {
   try {
     const mirrored = await startCamera(ui.video, facing);
     ui.stage.classList.toggle('mirrored', mirrored);
+    ui.stage.classList.add('live');
     cameraOn = true;
     restartWorkout();
   } catch (error) {
@@ -122,9 +128,10 @@ async function useCamera() {
 
 function bindControls() {
   ui.cameraButton.addEventListener('click', useCamera);
+  ui.heroCamera.addEventListener('click', useCamera);
   ui.facingButton.addEventListener('click', () => {
     facing = facing === 'user' ? 'environment' : 'user';
-    ui.facingButton.textContent = facing === 'user' ? 'Kamera belakang' : 'Kamera depan';
+    ui.facingButton.querySelector('span').textContent = facing === 'user' ? 'Kamera belakang' : 'Kamera depan';
     if (cameraOn) useCamera();
   });
   ui.fileInput.addEventListener('change', async (event) => {
@@ -132,6 +139,7 @@ function bindControls() {
     if (!file) return;
     cameraOn = false;
     ui.stage.classList.remove('mirrored');
+    ui.stage.classList.add('live');
     await startVideoFile(ui.video, file);
     restartWorkout();
   });
@@ -144,13 +152,13 @@ function bindControls() {
     history = [];
     clearStoredHistory();
     workout = forgetHistory(workout);
-    renderHistory(ui.history, ui.historyEmpty, history);
+    renderHistory(ui.history, ui.historyEmpty, history, ui.historyCount);
   });
 }
 
 async function init() {
   fillExerciseMenu();
-  renderHistory(ui.history, ui.historyEmpty, history);
+  renderHistory(ui.history, ui.historyEmpty, history, ui.historyCount);
   bindControls();
   try {
     await loadModels();
@@ -159,7 +167,7 @@ async function init() {
     ui.status.textContent = 'Gagal memuat model pose. Cek koneksi internet lalu muat ulang halaman.';
     return;
   }
-  [ui.cameraButton, ui.facingButton, ui.fileInput].forEach((control) => { control.disabled = false; });
+  [ui.cameraButton, ui.heroCamera, ui.facingButton, ui.fileInput].forEach((control) => { control.disabled = false; });
   ui.status.textContent = 'Model siap. Nyalakan kamera atau pilih video.';
   requestAnimationFrame(processFrame);
 }
