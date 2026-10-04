@@ -1,7 +1,7 @@
 """Write the parity fixture shared by the Python and JS feature implementations.
 
     python -m repcount.features.golden                  # deterministic synthetic sequence (default)
-    python -m repcount.features.golden --video-id push-up_17
+    python -m repcount.features.golden --video-id push_up_17
 
 The default input is synthetic so the fixture can be regenerated and checked in CI without the
 4.6 GB dataset, and so it can deliberately contain the edge cases a real clip rarely holds:

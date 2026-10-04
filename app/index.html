@@ -10,45 +10,68 @@
   <main class="app">
     <header>
       <h1>Rep Counter</h1>
-      <p class="subtitle">Hitung repetisi & cek form olahraga langsung di browser. Video tidak dikirim ke server.</p>
+      <p class="subtitle">Kenali latihan, hitung repetisi & cek form langsung di browser. Video tidak pernah dikirim ke server.</p>
     </header>
 
     <section class="controls">
       <label>
         Latihan
         <select id="exercise">
-          <option value="squat">Squat</option>
-          <option value="pushup">Push-up</option>
+          <option value="auto">Otomatis</option>
         </select>
       </label>
       <button id="btn-camera" type="button" disabled>Nyalakan kamera</button>
+      <button id="btn-facing" type="button" class="secondary" disabled>Kamera belakang</button>
       <label class="file-button">
         Pakai video
         <input id="video-file" type="file" accept="video/*" disabled />
       </label>
-      <button id="btn-reset" type="button" class="secondary">Reset</button>
+      <button id="btn-reset" type="button" class="secondary">Set baru</button>
+      <label class="toggle"><input id="speech" type="checkbox" checked /> Suara</label>
     </section>
+
+    <p id="model-status" class="model-status" hidden></p>
 
     <section class="stage">
       <video id="video" playsinline muted></video>
       <canvas id="overlay"></canvas>
       <p id="status" class="status">Memuat model pose…</p>
+      <span id="fps" class="fps"></span>
     </section>
 
     <section class="stats">
       <div class="stat">
+        <span class="stat-label">Tahap</span>
+        <span id="phase" class="stat-text">Siap</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Latihan</span>
+        <span id="exercise-name" class="stat-text">–</span>
+        <span id="exercise-meta" class="stat-meta"></span>
+      </div>
+      <div class="stat" id="reps-card">
         <span class="stat-label">Repetisi</span>
         <span id="count" class="stat-value">0</span>
       </div>
-      <div class="stat">
-        <span class="stat-label">Sudut sendi</span>
-        <span id="angle" class="stat-value">–</span>
+      <div class="stat" id="hold-card" hidden>
+        <span class="stat-label">Tahan (terbaik)</span>
+        <span id="hold" class="stat-value">0:00</span>
+        <span id="hold-best" class="stat-meta"></span>
       </div>
       <div class="stat wide">
-        <span class="stat-label">Feedback</span>
-        <span id="feedback" class="feedback">–</span>
+        <span class="stat-label">Koreksi form</span>
         <ul id="warnings" class="warnings"></ul>
+        <span id="form-note" class="stat-meta"></span>
       </div>
+    </section>
+
+    <section class="history">
+      <div class="history-head">
+        <h2>Riwayat set</h2>
+        <button id="btn-clear" type="button" class="secondary">Hapus riwayat</button>
+      </div>
+      <ol id="history" class="history-list"></ol>
+      <p id="history-empty" class="stat-meta">Belum ada set yang selesai.</p>
     </section>
   </main>
 

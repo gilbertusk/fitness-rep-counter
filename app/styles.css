@@ -21,6 +21,9 @@
 
 * { box-sizing: border-box; }
 
+/* Author rules like `.stat { display: flex }` would otherwise beat the browser's own [hidden] rule. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -78,4 +81,58 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 @media (max-width: 480px) {
   .stat.wide { grid-column: auto; }
+}
+
+/* ---------------------------------------------------------------- stage 4 */
+
+.toggle { flex-direction: row !important; align-items: center; gap: 6px !important; font-size: 1rem !important; color: var(--text) !important; }
+
+.model-status {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.fps {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px #000;
+}
+
+.stat-text { font-size: 1.25rem; font-weight: 600; }
+.stat-meta { color: var(--muted); font-size: 0.8rem; }
+
+.badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--border);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.warnings li { font-weight: 600; }
+
+.history { margin-top: 24px; }
+.history-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.history-head h2 { margin: 0; font-size: 1.1rem; }
+.history-list { margin: 12px 0 0; padding-left: 20px; }
+.history-list li { padding: 4px 0; font-variant-numeric: tabular-nums; }
+.history-list .when { color: var(--muted); font-size: 0.8rem; margin-left: 6px; }
+
+@media (max-width: 480px) {
+  .app { padding: 16px 12px; }
+  .controls > * { flex: 1 1 140px; }
+  .stat-value { font-size: 2rem; }
 }

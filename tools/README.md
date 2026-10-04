@@ -1,10 +1,8 @@
 # tools/ — Alat bantu developer (tidak di-deploy)
 
-Direncanakan (lihat `docs/PLAN.md` §4):
-
-- `labeler/` — alat labeling repetisi (Tahap 2)
-- `eval/` — evaluasi penghitung repetisi di Node (Tahap 3)
-- `benchmark/` — benchmark FPS di browser (Tahap 5)
-- `checkStructure.js` — penjaga struktur folder untuk CI (Tahap 5)
+- `labeler/` — alat labeling repetisi (Tahap 2): `npx serve tools/labeler` — petunjuk di `labeler/README.md`
+- `eval/` — evaluasi penghitung repetisi di Node (Tahap 3): `node tools/eval/evalReps.js` — petunjuk di `eval/README.md`
+- `benchmark/` — FPS & latensi pipeline app di browser (Tahap 5) — petunjuk di `benchmark/README.md`
+- `checkStructure.js` — penjaga struktur untuk CI (Tahap 5): `node tools/checkStructure.js`
 
 Test `tools/**/*.test.js` ikut dijalankan oleh `npm test`.

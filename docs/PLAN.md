@@ -56,16 +56,19 @@ Prinsip: **tiga dunia terpisah jelas** — `app/` (yang dipakai user), `ml/` (ya
 ```
 fitness-rep-counter/
 ├── README.md
-├── package.json                     # task runner JS: start, test, lint
+├── LICENSE                          # MIT
+├── package.json                     # task runner JS: start, test, coverage:core, lint, test:e2e
+├── package-lock.json                # dikunci npm (devDependencies untuk e2e)
 ├── .gitignore                       # mengabaikan data/, .venv/, node_modules/, dll.
-├── .github/workflows/ci.yml
+├── eslint.config.js                 # ESLint minimal (flat config), dipakai CI
+├── .github/workflows/               # ci.yml (test, coverage, lint, pytest, struktur, e2e) · deploy-pages.yml (manual)
 │
 ├── data/                            # 💾 SEMUA data (di-.gitignore, tidak di-commit)
 │   ├── workout-videos/<kelas>/      # dataset mentah (*.mp4, *.MOV)
 │   ├── pose_models/                 # pose_landmarker_lite.task
 │   ├── keypoints/<kelas>/           # <video_id>.npz + manifest.csv, errors.csv
 │   ├── keypoints_json/              # untuk evaluasi di Node
-│   └── runs/<timestamp>/            # checkpoint training
+│   └── runs/                        # <timestamp>/ checkpoint training; rep_traces_*.json (Tahap 3)
 │
 ├── app/                             # 🌐 Web app — folder ini yang di-deploy
 │   ├── index.html
@@ -79,15 +82,15 @@ fitness-rep-counter/
 │   │   │   ├── geometry/            # angles.js, oneEuroFilter.js
 │   │   │   ├── features/            # features.js (spesifikasi: docs/FEATURES.md)
 │   │   │   ├── classify/            # classifier.js (pasca-proses prediksi)
-│   │   │   ├── counting/            # thresholdCounter.js, genericCounter.js, holdTimer.js
+│   │   │   ├── counting/            # genericCounter.js, holdTimer.js; baseline: thresholdCounter.js, naivePeakCounter.js
 │   │   │   ├── form/                # measure.js, rules/<latihan>.js
-│   │   │   └── session/             # session.js (state machine sesi)
+│   │   │   └── session/             # session.js (state machine), speechQueue.js, workout.js (loop per frame)
 │   │   ├── adapters/                # pembungkus browser API: poseLandmarker.js, onnxClassifier.js, speech.js, storage.js
 │   │   └── ui/                      # DOM & render: camera.js, overlay.js, panel.js
 │   └── tests/
 │       ├── unit/                    # mencerminkan struktur src/core/
-│       ├── e2e/                     # Playwright smoke test
-│       └── fixtures/                # features_golden.json, videos/
+│       ├── e2e/                     # Playwright: smoke.spec.js, playwright.config.js
+│       └── fixtures/                # features_golden.json, syntheticPose.js, videos/ (push-up_17.mp4 + .webm)
 │
 ├── ml/                              # 🧠 Pipeline Python
 │   ├── pyproject.toml               # paket `repcount`, dependency di-pin
@@ -111,13 +114,19 @@ fitness-rep-counter/
 │   │   ├── evalReps.js
 │   │   ├── lib/repMetrics.js
 │   │   └── tests/
-│   ├── benchmark/                   # benchmark FPS di browser
-│   └── checkStructure.js            # dipakai CI: menjaga struktur folder ini
+│   ├── benchmark/                   # FPS & latensi di browser
+│   │   ├── index.html
+│   │   ├── src/                     # bench.js (pengukuran), stats.js (murni)
+│   │   ├── headless.js              # run Playwright yang bisa diulang
+│   │   └── tests/
+│   ├── checkStructure.js            # dipakai CI: menjaga struktur folder ini
+│   └── checkStructure.test.js
 │
 ├── labels/                          # ✍️ Label manusia (di-commit)
 │   ├── README.md                    # definisi 1 repetisi & aturan labeling
 │   ├── to_label.csv
-│   └── rep_labels.csv
+│   ├── rep_labels.csv
+│   └── rep_labels_recheck.csv       # label ulang ±10% untuk mengukur konsistensi (Tahap 2)
 │
 ├── reports/                         # 📊 Hasil evaluasi (di-commit), nomor = tahap
 │   ├── 00-data/                     # pose_quality.md/.csv, split.md
@@ -156,11 +165,11 @@ Aturan kerapian:
 | # | Tahap | Prompt | Output utama | Status |
 |---|---|---|---|---|
 | 0 | Setup & ekstraksi keypoint | `prompts/00-setup-and-extraction.md` | keypoint `.npz`, manifest, laporan kualitas pose, split | ✅ |
-| 1 | Pengenal latihan (22 kelas) | `prompts/01-exercise-classifier.md` | model ONNX, laporan evaluasi, parity test fitur | 🚧 kode siap, **belum dilatih** (lihat §8) |
-| 2 | Label repetisi (manusia + alat) | `prompts/02-rep-labeling.md` | alat labeling, `labels/rep_labels.csv` | ☐ |
-| 3 | Penghitung repetisi generik | `prompts/03-generic-rep-counter.md` | `genericCounter.js`, laporan MAE/OBO vs baseline | ☐ |
-| 4 | Integrasi web app | `prompts/04-web-integration.md` | demo: auto-detect + hitung + form + plank | ☐ |
-| 5 | Siap dipamerkan | `prompts/05-ship.md` | deploy, CI, benchmark FPS, README final | ☐ |
+| 1 | Pengenal latihan (22 kelas) | `prompts/01-exercise-classifier.md` | model ONNX, laporan evaluasi, parity test fitur | ✅ macro-F1 0,822 level video (test), lihat §8 |
+| 2 | Label repetisi (manusia + alat) | `prompts/02-rep-labeling.md` | alat labeling, `labels/rep_labels.csv` | 🚧 alat siap, menunggu label manusia (lihat §8) |
+| 3 | Penghitung repetisi generik | `prompts/03-generic-rep-counter.md` | `genericCounter.js`, laporan MAE/OBO vs baseline | 🚧 kode & harness siap, **belum dievaluasi** (butuh label Tahap 2, lihat §8) |
+| 4 | Integrasi web app | `prompts/04-web-integration.md` | demo: auto-detect + hitung + form + plank | ✅ deteksi otomatis aktif; label "eksperimental" menunggu evaluasi Tahap 3 |
+| 5 | Siap dipamerkan | `prompts/05-ship.md` | deploy, CI, benchmark FPS, README final | 🚧 CI, benchmark, README, model card & konfigurasi deploy siap; **menunggu persetujuan deploy, benchmark laptop/HP, dan angka Tahap 2–3** (lihat §8) |
 
 Urutan wajib: 0 → 1 → (2 bisa paralel dengan 1) → 3 → 4 → 5.
 
@@ -253,3 +262,243 @@ dijalankan di mesin yang punya data.
 **Sisa pekerjaan Tahap 1** (di mesin yang punya data): jalankan 4 perintah di `ml/README.md`,
 lalu isi `reports/01-classifier/classifier.md`, `app/models/`, dan perbarui Status di §5.
 
+### 2026-10-02 — Tahap 2: alat & label repetisi (alat siap, menunggu label manusia)
+
+**Status: 🚧 alat siap, menunggu label manusia.** Belum ada satu label pun — sesuai §6.4, label
+hanya dari manusia. `labels/to_label.csv` juga **belum ada**: pemilihannya butuh ekstensi & durasi
+per video, yang hanya tersimpan di `data/keypoints/manifest.csv`, dan lingkungan tempat tahap ini
+dikerjakan tidak punya `data/`. Satu perintah di mesin yang punya data: `python -m repcount.labels.select`.
+
+- **Definisi satu rep** (`labels/README.md`): satu siklus penuh, ditandai saat gerakan **kembali ke
+  posisi awal** — momen yang sama dengan saat penghitung Tahap 3 menambah hitungan, sehingga waktu
+  tanda bisa dibandingkan, bukan hanya jumlahnya. Ditulis untuk 22 kelas, plus aturan rep parsial,
+  video terpotong, lengan bergantian (tiap lengan = 1 rep, dicatat `bergantian`), dan plank sebagai
+  durasi tahan.
+- **Konflik aturan, diputuskan:** §4 membatasi README folder ≤ 15 baris, tetapi prompt Tahap 2
+  menaruh definisi 22 gerakan + panduan kerja di `labels/README.md`. Prompt Tahap 2 diikuti (lebih
+  spesifik), daripada membuat berkas baru di luar peta.
+- **Pemilihan video:** maks 5 per kelas dari val + test, serakah dengan prioritas **grup
+  near-duplicate baru** (dua klip dari satu sumber = orang & tempat yang sama, membuang waktu
+  pelabel) → ekstensi baru → durasi terjauh. Generator acak per kelas, jadi daftar satu kelas tidak
+  berubah bila kelas lain berubah. Video tanpa pose sama sekali dikeluarkan. Perkiraan: ±104 video
+  (plank hanya 2, decline_bench_press / romanian_deadlift / russian_twist masing-masing 4).
+- **Berkas baru di peta §4:** `labels/rep_labels_recheck.csv`, untuk sesi cek ulang yang disarankan
+  prompt Tahap 2. Subset ±10%-nya dipilih deterministik di alat dari hash `video_id`, jadi tidak
+  perlu berkas daftar terpisah.
+- **Perkiraan waktu melabel: ±2 jam** + ±15 menit cek ulang. Rata-rata video 7,8 detik
+  (`reports/00-data/pose_quality.csv`), jadi rekaman mentah ±14 menit.
+- **Alat diuji di Chromium sungguhan** dengan Playwright (24/24): pencocokan folder, semua tombol,
+  langkah per frame (33,4 ms pada 29,97 fps), bertahan setelah muat ulang, isolasi mode cek ulang,
+  tanpa error console. **CSV hasil export lolos `repcount.labels.validate` tanpa diubah.**
+  Catatan: Chromium bawaan Playwright tidak punya H.264, jadi alur lengkap diuji dengan salinan
+  WebM dari video fixture; jalur galat diuji dengan MP4 aslinya.
+- **Tiga bug ditemukan oleh pengujian:** status "N dari M video ditemukan" langsung terhapus saat
+  video pertama dibuka (folder yang salah tidak akan ketahuan); `.MOV` HEVC dan `.mp4` hasil
+  konversinya memetakan ke `video_id` yang sama dan yang terakhir terbaca menang (kini `.mp4`
+  diutamakan); dan contoh `--video-id push-up_17` di dokumentasi Tahap 1 salah (yang benar
+  `push_up_17`).
+- **Risiko yang belum bisa diuji:** `.MOV` ponsel dengan codec HEVC mungkin tidak bisa diputar di
+  browser. Alat menampilkan panduan konversi `ffmpeg` bila itu terjadi.
+- **Test:** 233 pytest + 100 node:test lulus; `ruff check ml` bersih. Coverage modul label Python
+  97%, `tools/labeler/src/labels.js` 100% baris.
+
+**Sisa pekerjaan Tahap 2** (manusia, di mesin yang punya data): jalankan `select`, label ±104 video
+di alat, export → `labels/rep_labels.csv`, lalu `validate`. Minimal 2 hari kemudian: sesi cek ulang
+→ `validate --agreement`.
+
+### 2026-10-02 — Tahap 3: penghitung repetisi generik (kode & harness siap, belum dievaluasi)
+
+**Status: 🚧 belum dievaluasi.** Dikerjakan atas permintaan langsung **sebelum Tahap 1 dan 2 selesai**,
+menyimpang dari urutan wajib §5. Akibatnya: tidak ada label (Tahap 2) dan tidak ada keypoint di
+lingkungan ini, jadi **belum ada tuning di val, belum ada angka MAE/OBO, dan belum ada
+`reports/03-rep-counter/`**. Semua angka di bawah berasal dari data sintetis atau pengukuran
+kecepatan — tidak satu pun berkata apa-apa tentang akurasi di dataset asli.
+
+- **Desain counter generik** (`app/src/core/counting/genericCounter.js`): fitur per frame dari
+  `features.js` (x/y 13 landmark + 8 sudut) → resample 15 fps → EMA → window berjalan 4 s → satu
+  sinyal → mesin zona dengan hysteresis (30% / 70% rentang). Rep dihitung saat sinyal **kembali ke
+  sisi awalnya**, sejalan dengan konvensi label. **Penghitungan tidak menunggu periode**: video di
+  dataset ini rata-rata 7,8 s dan sering hanya 1–3 rep, jadi counter yang butuh dua siklus untuk
+  "mengunci" akan kehilangan rep pertama di hampir setiap video. Periode autokorelasi hanya mengatur
+  jarak minimum (0,6 × periode) untuk ayunan dangkal; ayunan penuh (≥ 85% rentang) selalu dihitung.
+- **Dua sinyal, sesuai prompt:** PCA online (iterasi pangkat, *warm start*, tanda diselaraskan) dan
+  sudut sendi paling bervariasi (ganti kanal hanya bila menang 1,5×). Setiap sampel, **seluruh
+  window diproyeksikan ulang** dengan definisi sinyal saat ini, sehingga rentang, periode, dan sisi
+  awal selalu menggambarkan satu sinyal yang konsisten. Pilihan di antara keduanya menunggu val.
+- **Empat cacat desain ditemukan oleh test sintetis dan sapuan acak 300 set, lalu diperbaiki:**
+  1. Vektor gerak yang tidak di-*center* diproyeksikan ke sumbu PCA yang berputar pada derau →
+     **diam terhitung 3 rep**.
+  2. Sisi awal ("home") ditentukan dari satu sampel berderau → kini rata-rata 0,5 s pertama.
+  3. EMA 0,35 meredam rep 0,8 s ke 64% amplitudo (vs 90% untuk rep 2 s), sehingga rep cepat tampak
+     dangkal → kini 0,5 (81% vs 96%), dihitung dari respons frekuensi filter, bukan disetel ke test.
+  4. Home yang terkunci dari jitter tepat di atas ambang diam mengikat gerakan asli yang jauh lebih
+     besar → kini ditinjau ulang bila rentang tumbuh > 2× **sebelum** ada rep; setelah satu rep
+     terhitung, home dibekukan (peninjauan di tengah set terbukti menghilangkan rep).
+  Kedua regression test terakhir dibuktikan **gagal tanpa perbaikannya**.
+- **Hasil sintetis setelah perbaikan:** 300/300 tepat pada sinyal acak; 160/160 pada aliran pose
+  squat dan curl (hanya lengan) acak, untuk kedua sinyal.
+- **Kecepatan (diukur, Node 22, container 4-core, 3× ulang):** generic-PCA rata-rata **0,07–0,11 ms**,
+  p95 0,16–0,24 ms per frame; generic-angle 0,02–0,03 ms. Memenuhi < 1 ms. Maks sesekali ±2 ms
+  (jeda GC/JIT). Jalur PCA sempat 3–4× lebih lambat (alokasi 60 baris per sampel dan satu perkalian
+  titik konstan yang dihitung ulang per baris) — diperbaiki tanpa mengubah perilaku.
+- **Waktu rep dilaporkan ±0,2 s lebih awal** daripada tanda manusia, karena rep dihitung saat sinyal
+  melewati 70% jalan kembali. Disengaja (aplikasi terasa responsif); latensi di laporan akan negatif.
+- **Baseline:** `naive-peaks` (parameter tetap, batas bawah) dan `threshold` (hanya squat & push-up;
+  kelas lain dilaporkan **N/A**, tidak pernah nol). Temuan: siku lurus di dekat 180° hanya bisa
+  terbaca lebih kecil saat ada derau, sehingga sebarannya miring dan lebar (163,6°–178,9° pada jitter
+  0,002) — naive-peaks menghitung rep saat diam, dan di data sintetis menghitung berlebih ±1,6×.
+- **Dua bug sambungan ditemukan oleh uji rantai end-to-end** (npz → JSON → Node → grafik): ekspor
+  membuang seluruh frame bila satu landmark saja NaN (di data sintetis: semua frame), dan JS membaca
+  `null` dari JSON sebagai 0 — landmark hilang akan terbaca sebagai titik di pojok gambar.
+- **Penjaga kejujuran di harness:** `--split test` ditolak tanpa `--final`; `--grid` hanya di val
+  (18 setelan untuk generic, 12 untuk naive-peaks); video berlabel tanpa keypoint dicetak, tidak
+  dilewati diam-diam.
+- **Peta §4 diperbarui:** `app/tests/fixtures/syntheticPose.js` (generator pose sintetis bersama untuk
+  test counter dan harness) dan `data/runs/rep_traces_*.json` (jejak sinyal untuk grafik).
+- **Test:** 245 pytest + 169 node:test lulus; `ruff check ml` bersih. Coverage `genericCounter.js` &
+  `repMetrics.js` 100% baris.
+
+**Sisa pekerjaan Tahap 3** (setelah `labels/rep_labels.csv` ada, di mesin yang punya data):
+`keypoints_json` → `evalReps --grid` untuk `generic` dan `generic-angle` di val → pilih sinyal &
+setelan → `evalReps` keempat counter di val → **sekali** `--split test --final` → `rep_plots` →
+tulis `reports/03-rep-counter/rep_counter.md`.
+
+### 2026-10-02 — Tahap 4: integrasi web app (app jalan, deteksi otomatis menunggu model)
+
+**Status: 🚧.** Dikerjakan atas permintaan langsung **sebelum Tahap 1–3 selesai** (menyimpang dari §5).
+App berjalan penuh untuk webcam dan file video dengan pemilihan latihan manual; **deteksi latihan
+otomatis belum aktif** karena belum ada `exercise_classifier.onnx`. Semua jalurnya sudah terpasang dan
+diuji dengan skor sintetis — begitu `python -m repcount.export.onnx` dijalankan, app memakainya.
+
+- **Yang jalan:** sesi `Siap → Mengenali → Menghitung → Istirahat` (set dimulai saat gerakan dimulai,
+  jadi rep selama pengenalan tetap terhitung; label terkunci setelah 2 window yakin; pilihan manual
+  mematikan deteksi otomatis); penghitung generik untuk semua 22 latihan; aturan form untuk squat,
+  push-up, biceps curl, lateral raise, deadlift, shoulder press, dan plank (`docs/FORM_RULES.md`);
+  timer tahan plank; One Euro filter; petunjuk kualitas pose; suara (maks 1 ucapan / 2 s, bisa
+  dimatikan); riwayat set di `localStorage`; kamera depan/belakang; tampilan ponsel.
+- **Semua latihan ditandai "eksperimental"**: prompt meminta label itu untuk latihan yang lemah di
+  Tahap 3, tapi Tahap 3 belum dievaluasi — jadi tidak ada dasar untuk menyebut satu pun "didukung".
+- **Penyimpangan dari prompt — One Euro filter:** dipakai untuk overlay, aturan form, dan timer plank,
+  **tidak** untuk fitur classifier dan penghitung repetisi. Keduanya harus melihat keypoint mentah yang
+  sama dengan saat dilatih/dievaluasi (§3); memfilternya di browser membuat angka evaluasi tidak lagi
+  menggambarkan app.
+- **Paritas window classifier:** `features.js` kini membangun window frame demi frame
+  (`pushWindowStream`) yang **identik** dengan window offline — dibuktikan dengan golden fixture,
+  toleransi 1e-4. Biayanya 1 frame *look-ahead* dan jeda 0,4 s per window.
+- **Berkas baru di peta §4:** `core/session/workout.js` (seluruh keputusan per frame dalam satu fungsi
+  murni, agar `main.js` benar-benar hanya merangkai dan seluruh loop teruji di Node),
+  `app/models/labels.json` (placeholder tanpa label; ditimpa ekspor Tahap 1), `package-lock.json`,
+  `app/tests/e2e/playwright.config.js`, dan salinan WebM video fixture (153 KB).
+- **Bukti `core/` tidak meng-import `adapters/`/`ui/`:**
+  `grep -rnE "from ['\"](\.\./)+(adapters|ui)/" app/src/core/` → tidak ada hasil.
+- **Masalah yang ditemukan saat menjalankan app sungguhan, sudah diperbaiki:**
+  1. **Delegate GPU di WebGL perangkat lunak** (SwiftShader, llvmpipe — VM, desktop jarak jauh, Linux
+     tanpa driver GPU): MediaPipe **245 ms/frame vs 35 ms di CPU**. Adapter kini membaca renderer WebGL
+     dan memakai CPU bila renderer-nya perangkat lunak: **3–4 FPS → 21–24 FPS** di mesin uji, dan
+     fixture terhitung tepat (3 rep dari 3 putaran klip 1-rep).
+  2. Aturan mengukur titik yang tidak terlihat: dengan pinggul keluar frame, aturan garis badan push-up
+     memberi peringatan dari posisi tebakan (app awal juga begitu). Kini tiap aturan hanya mengukur bila
+     titiknya sendiri terlihat.
+  3. Panel menulis "Form terlihat baik" saat tidak ada aturan yang bisa mengukur → kini "belum bisa
+     dinilai".
+  4. Deteksi istirahat butuh ±7 s, bukan 3 s, karena flag `moving` membaca window 4 s → kini 1 s
+     terakhir.
+  5. `[hidden]` kalah oleh `.stat { display: flex }`: mode plank menampilkan kartu rep dan tahan sekaligus.
+  6. Tanpa model, app memicu 404 di console dan mengunduh `onnxruntime-web` sia-sia → adapter kini
+     membaca `labels.json` dulu.
+- **Kecepatan (diukur di Chromium headless, 4-core):** seluruh logika app (`stepFrame`) median **0,2 ms**,
+  maks 0,9 ms per frame; sisanya MediaPipe. Angka di perangkat nyata menunggu benchmark Tahap 5.
+- **E2E** (`npm run test:e2e`): video fixture terhitung > 0, tanpa error console, dan **setiap request
+  dicatat** — test gagal bila ada yang bukan GET, membawa body, atau ke host di luar app, CDN MediaPipe,
+  dan bucket model. Chromium Playwright tidak punya H.264, jadi memakai salinan WebM; MediaPipe disajikan
+  dari paket npm yang sama dengan isi CDN. Baris `INFO:` dari log WASM MediaPipe (dialirkan ke
+  `console.error`) adalah satu-satunya yang dikecualikan. Jalur webcam diverifikasi sekali dengan kamera
+  palsu Chromium (tidak di-commit): menghitung, kamera depan dicerminkan, kamera belakang tidak.
+- **Lingkungan pengerjaan:** kebijakan jaringannya menolak `cdn.jsdelivr.net`, sehingga app tidak bisa
+  dibuka di sini persis seperti produksi; seluruh verifikasi memakai salinan lokal paket npm.
+- **Satu bug Python yang saya buat sendiri, ditemukan sebelum commit:** `classifier_report.py` membaca
+  blok `export` dari `app/models/labels.json` tanpa syarat, sehingga placeholder memicu `KeyError`.
+  Blok itu kini opsional.
+- **Temuan lingkungan:** di Linux, MediaPipe Python butuh pustaka sistem libEGL (`libegl1`). Test ekstraksi
+  Tahap 0 selama ini *dilewati* di sini karena model pose belum terunduh; setelah model ada dan libEGL
+  dipasang, test itu berjalan dan lulus. Dicatat di `ml/README.md`.
+- **Test:** 251 node:test + 2 Playwright + 246 pytest lulus (0 dilewati); coverage `app/src/core/`
+  **100% baris, 97,5% cabang**; `ruff check ml` bersih.
+
+**Sisa pekerjaan Tahap 4:** aktifkan deteksi otomatis setelah Tahap 1 (cukup ekspor model ke
+`app/models/`), lalu ganti status "eksperimental" per latihan sesuai hasil Tahap 3.
+
+### 2026-10-02 — Tahap 5: siap dipamerkan (siap kecuali yang butuh pemilik & data)
+
+- **Status jujur, bukan ✅:** prompt meminta semua status §5 menjadi ✅. Itu berarti menyatakan model
+  terlatih, rep terevaluasi, dan app ter-deploy — ketiganya belum terjadi. Status Tahap 1–5 tetap 🚧
+  dengan alasan; README dan model card tidak memuat angka akurasi, hanya "–" dengan tautan ke laporan
+  yang akan menghasilkannya.
+- **CI** (`.github/workflows/ci.yml`, job js / structure / python / e2e): `npm test`, gerbang coverage
+  `npm run coverage:core` (gagal < 80% baris, cabang, atau fungsi di `app/src/core/` — diuji gagal
+  dengan ambang 100% fungsi), ESLint minimal (`eslint.config.js`, 0 temuan; probe dengan variabel tak
+  terpakai & fungsi tak terdefinisi ditolak), `pytest --cov` + `ruff`, cek struktur, smoke test
+  Playwright. Python di CI memasang extra `train` dengan torch CPU, karena test ekspor/model
+  membutuhkannya (prompt menyebut `ml[dev]` saja). Semua langkah dijalankan lokal dulu dan lulus;
+  workflow belum pernah berjalan di GitHub sampai di-push.
+- **`tools/checkStructure.js`** memeriksa lebih dari yang diminta, semuanya aturan §4/§6 yang sudah ada:
+  entri root di luar peta, `core/` meng-import `adapters/`/`ui/` (path di-resolve, bukan dicocokkan teks;
+  termasuk import dinamis & re-export), file sumber > 400 baris, dan video/npz/checkpoint ter-track di
+  luar fixture. Hanya file yang di-track git yang dihitung.
+- **Benchmark** (`tools/benchmark/`): halaman yang meng-import modul app asli; dua putaran — langsung
+  (pose → `stepFrame` → overlay, + pengenal) dan putar ulang landmark untuk tahap core (tiap panggilan
+  diulang 20× pada input sama, sah karena core murni dan di bawah resolusi `performance.now()`).
+  **Satu kesalahan saya, ditemukan karena angkanya tidak cocok dengan Tahap 4:** versi awal memakai
+  `requestVideoFrameCallback` dan mendapat 15 FPS, sedangkan app (loop `requestAnimationFrame`) 21–24 FPS;
+  benchmark kini memakai loop yang sama dengan `main.js` → 22–23 FPS.
+- **Hasil terukur (container cloud 4 vCPU, tanpa GPU, delegate CPU):** 22–23 FPS end-to-end; pose
+  p50/p95 39,7/54,0 ms; `stepFrame` 0,105/0,195 ms; pengenal (arsitektur asli, **bobot acak** — hanya
+  latensi) 0,8 ms p50; muat app sampai "Model siap" 822–868 ms dengan aset lokal. Laptop dan HP belum
+  diukur: butuh perangkat pemilik (`reports/05-performance/performance.md` §3–4).
+- **Temuan:** bundle `ort.webgpu.min.mjs` menarik WASM JSEP ±24 MB (vs 11,9 MB WASM biasa) untuk model
+  63 ribu parameter. Tidak diubah sekarang — keputusan menunggu perbandingan dengan model terlatih.
+- **Deploy:** `.github/workflows/deploy-pages.yml`, hanya `workflow_dispatch`; situs = `app/` tanpa
+  `tests/` dan README (244 KB). Diverifikasi di bawah subpath `/fitness-rep-counter/`: "Model siap",
+  tanpa 404 atau error. **Belum di-deploy** — menunggu persetujuan dan Settings → Pages → Source
+  "GitHub Actions".
+- **Bersih-bersih:** `console.log` hanya di CLI (`evalReps.js`, `checkStructure.js`); tidak ada TODO
+  basi (yang cocok hanya enum `STATUS.TODO` di labeler); tidak ada file sumber > 400 baris; `git ls-files`
+  hanya berisi dua fixture video (380 KB + 156 KB), tanpa `.npz`, checkpoint, atau rahasia. Dua export
+  yang hanya dipakai di file-nya sendiri (`stopSource`, `prefersCpu`) dijadikan privat.
+- **Peta §4 diperbarui:** `eslint.config.js`, `.github/workflows/deploy-pages.yml`, isi `tools/benchmark/`,
+  `tools/checkStructure.test.js`, dan `naivePeakCounter.js` yang sejak Tahap 3 belum tercantum.
+- **Belum diputuskan pemilik:** ~~lisensi kode~~ (2026-10-04: pemilik memilih **MIT**; `LICENSE` ditambahkan
+  ke root, peta §4, dan `checkStructure.js`) dan lokasi GIF demo (≤ 5 MB; usul `docs/demo.gif`).
+- **Test:** 263 node:test + 246 pytest lulus; coverage `app/src/core/` 100% baris, 97,5% cabang,
+  99,5% fungsi; `ruff`, ESLint, dan cek struktur bersih.
+
+**Sisa pekerjaan Tahap 5:** setujui & jalankan deploy, isi link demo + GIF, ukur laptop & HP; angka
+README terisi setelah Tahap 1 (training) dan Tahap 2–3 (label → MAE/OBO).
+
+### 2026-10-02 — Tahap 1 selesai: model dilatih oleh pemilik proyek
+
+- **Run** `data/runs/20261002-1640` di komputer pemilik (dataset hanya ada di sana; container cloud tidak
+  bisa mengakses Kaggle). Window: train 2761, val 738, test 606 dari 93 dari 99 video test.
+- **Val (pemilihan model):** baseline 0,736 akurasi / 0,751 macro-F1 (86 s); temporal 1D-CNN epoch terbaik
+  29 dari 42 (early stopping, patience 12), 0,778 / 0,795 (33 s). Loss train turun terus sejak ±epoch 25
+  sementara val mendatar — overfitting ringan yang dihentikan early stopping.
+- **Test, sekali (`reports/01-classifier/classifier.md`):** level video temporal **0,822 macro-F1 / 81,7 %**
+  vs baseline 0,756 / 80,6 %; level window 0,761 / 78,7 % vs 0,723 / 77,4 %. Keunggulan temporal ada di
+  macro-F1, bukan akurasi → terutama di kelas kecil. Terburuk: biceps curl 0,50, romanian deadlift 0,50,
+  decline bench 0,57, chest fly 0,60, bench press 0,67. Test hanya 1–9 video per kelas.
+- **Ambang "tidak yakin" dari val:** keyakinan 0,65 (cakupan 74 %), selisih 0,45 (cakupan 73 %), target
+  akurasi 90 %. Catatan: disapu pada probabilitas per window, sedangkan app memakainya pada probabilitas
+  yang di-EMA (smoothing 0,4) dan keduanya sekaligus — cakupan nyata di app belum diukur.
+- **Ekspor:** 270 KB, ONNX vs PyTorch beda maks 5,7e-06; 0,08 ms per window di CPU Python, 1,1 ms di browser.
+- **Kesalahan saya, ditemukan saat membaca laporan:** paragraf "Dugaan penyebab" di `classifier_report.py`
+  adalah teks tetap yang ditulis sebelum ada hasil (menyalahkan latihan berbaring). Hasilnya membantah:
+  kelas terburuk, biceps curl, punya deteksi pose 97,8 % (di atas rata-rata dataset). Paragraf itu kini
+  dihitung dari `pose_quality.csv` dan hanya menyatakan kelas mana yang bisa / tidak bisa dijelaskan kualitas
+  pose; tabel F1 per kelas kini menampilkan jumlah video test. **Laporan perlu dibuat ulang** dengan satu
+  perintah `classifier_report` (angka metrik identik; tidak ada keputusan baru dari test).
+- **Integrasi app:** e2e kini memverifikasi deteksi otomatis (video fixture dikenali sebagai Push-up, yakin
+  83 % setelah ±3 s) — **bukan klaim akurasi**, karena `push_up_17` ada di split train. Test baru memastikan
+  tanpa model app tetap menghitung dan tidak mengunduh runtime ONNX. ONNX Runtime menulis peringatan
+  "Unknown CPU vendor" ke `console.error` di VM → adapter kini memakai `ort.env.logLevel = 'error'`.
+- **Benchmark dengan model terlatih** di VM yang ±2× lebih lambat (setelah container dimulai ulang):
+  9,9–11,5 FPS; tanpa model di VM yang sama 10,0 FPS → perlambatan berasal dari VM, bukan model.
