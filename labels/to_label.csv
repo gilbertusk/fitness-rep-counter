@@ -1,0 +1,105 @@
+video_id,label,task,path,ext,fps,duration_s,split,group_id,detected_pct
+barbell_biceps_curl_42,barbell_biceps_curl,reps,barbell biceps curl/barbell biceps curl_42.mp4,mp4,30.0,4.7,test,g0013,100.0
+barbell_biceps_curl_45,barbell_biceps_curl,reps,barbell biceps curl/barbell biceps curl_45.mp4,mp4,29.97,14.047,test,g0015,100.0
+barbell_biceps_curl_60,barbell_biceps_curl,reps,barbell biceps curl/barbell biceps curl_60.mp4,mp4,29.97,8.208,val,g0029,100.0
+barbell_biceps_curl_8,barbell_biceps_curl,reps,barbell biceps curl/barbell biceps curl_8.mp4,mp4,29.97,3.27,val,g0032,100.0
+barbell_biceps_curl_9,barbell_biceps_curl,reps,barbell biceps curl/barbell biceps curl_9.mp4,mp4,29.97,2.402,val,g0030,94.4
+bench_press_12,bench_press,reps,bench press/bench press_12.mp4,mp4,29.97,5.005,val,g0035,100.0
+bench_press_3,bench_press,reps,bench press/bench press_3.mp4,mp4,29.97,2.87,val,g0049,100.0
+bench_press_39,bench_press,reps,bench press/bench press_39.mp4,mp4,25.0,30.2,val,g0052,95.0
+bench_press_50,bench_press,reps,bench press/bench press_50.mp4,mp4,25.0,2.0,test,g0064,50.0
+bench_press_9,bench_press,reps,bench press/bench press_9.mp4,mp4,29.97,1.568,val,g0078,97.9
+chest_fly_machine_15,chest_fly_machine,reps,chest fly machine/chest fly machine_15.mp4,mp4,29.97,4.938,test,g0082,99.3
+chest_fly_machine_16,chest_fly_machine,reps,chest fly machine/chest fly machine_16.mp4,mp4,29.97,2.669,val,g0083,100.0
+chest_fly_machine_18,chest_fly_machine,reps,chest fly machine/chest fly machine_18.mp4,mp4,29.97,4.404,val,g0085,100.0
+chest_fly_machine_2,chest_fly_machine,reps,chest fly machine/chest fly machine_2.mp4,mp4,29.97,3.47,test,g0087,100.0
+chest_fly_machine_22,chest_fly_machine,reps,chest fly machine/chest fly machine_22.mp4,mp4,29.97,15.115,test,g0088,100.0
+deadlift_10,deadlift,reps,deadlift/deadlift_10.mp4,mp4,29.97,5.005,val,g0102,100.0
+deadlift_16,deadlift,reps,deadlift/deadlift_16.mp4,mp4,29.97,3.637,test,g0108,100.0
+deadlift_22,deadlift,reps,deadlift/deadlift_22.mp4,mp4,29.97,2.336,val,g0113,100.0
+deadlift_30,deadlift,reps,deadlift/deadlift_30.mp4,mp4,24.0,7.708,test,g0122,100.0
+deadlift_31,deadlift,reps,deadlift/deadlift_31.mp4,mp4,24.0,6.0,val,g0123,79.9
+dbp_11,decline_bench_press,reps,decline bench press/dbp_11.mp4,mp4,29.97,10.911,test,g0129,100.0
+dbp_3,decline_bench_press,reps,decline bench press/dbp_3.MOV,mov,29.97,6.707,val,g0132,98.5
+dbp_6,decline_bench_press,reps,decline bench press/dbp_6.MOV,mov,29.974,25.288,val,g0135,99.2
+dbp_9,decline_bench_press,reps,decline bench press/dbp_9.mp4,mp4,23.976,8.008,test,g0138,100.0
+hammer_curl_1,hammer_curl,reps,hammer curl/hammer curl_1.MOV,mov,29.973,13.145,val,g0139,100.0
+hammer_curl_11,hammer_curl,reps,hammer curl/hammer curl_11.mp4,mp4,30.0,17.6,test,g0141,100.0
+hammer_curl_13,hammer_curl,reps,hammer curl/hammer curl_13.mp4,mp4,30.0,9.7,test,g0143,100.0
+hammer_curl_18,hammer_curl,reps,hammer curl/hammer curl_18.mp4,mp4,29.97,3.103,val,g0148,100.0
+hammer_curl_5,hammer_curl,reps,hammer curl/hammer curl_5.MOV,mov,29.972,14.347,val,g0153,98.4
+hip_thrust_10,hip_thrust,reps,hip thrust/hip thrust_10.mp4,mp4,29.97,12.713,val,g0160,100.0
+hip_thrust_12,hip_thrust,reps,hip thrust/hip thrust_12.mp4,mp4,29.97,8.909,test,g0162,100.0
+hip_thrust_16,hip_thrust,reps,hip thrust/hip thrust_16.mp4,mp4,25.0,6.12,val,g0166,100.0
+hip_thrust_4,hip_thrust,reps,hip thrust/hip thrust_4.MOV,mov,30.003,18.298,test,g0170,100.0
+hip_thrust_5,hip_thrust,reps,hip thrust/hip thrust_5.mp4,mp4,24.0,42.167,val,g0171,99.7
+incline_bench_press_13,incline_bench_press,reps,incline bench press/incline bench press_13.mp4,mp4,29.97,1.568,test,g0180,83.0
+incline_bench_press_2,incline_bench_press,reps,incline bench press/incline bench press_2.mp4,mp4,29.97,2.069,val,g0187,95.2
+incline_bench_press_20,incline_bench_press,reps,incline bench press/incline bench press_20.mp4,mp4,29.97,3.103,test,g0188,100.0
+incline_bench_press_30,incline_bench_press,reps,incline bench press/incline bench press_30.mp4,mp4,25.0,35.48,val,g0199,98.6
+incline_bench_press_6,incline_bench_press,reps,incline bench press/incline bench press_6.mp4,mp4,29.97,3.704,val,g0204,100.0
+lat_pulldown_26,lat_pulldown,reps,lat pulldown/lat pulldown_26.mp4,mp4,25.0,6.32,val,g0219,99.4
+lat_pulldown_27,lat_pulldown,reps,lat pulldown/lat pulldown_27.mp4,mp4,25.0,14.0,val,g0220,99.7
+lat_pulldown_33,lat_pulldown,reps,lat pulldown/lat pulldown_33.mp4,mp4,23.976,2.419,val,g0226,100.0
+lat_pulldown_48,lat_pulldown,reps,lat pulldown/lat pulldown_48.mp4,mp4,29.97,9.576,val,g0241,100.0
+lat_pulldown_50,lat_pulldown,reps,lat pulldown/lat pulldown_50.mp4,mp4,29.97,3.871,val,g0243,100.0
+lateral_raise_16,lateral_raise,reps,lateral raise/lateral raise_16.mp4,mp4,24.0,5.0,val,g0254,100.0
+lateral_raise_18,lateral_raise,reps,lateral raise/lateral raise_18.mp4,mp4,24.0,3.375,test,g0256,100.0
+lateral_raise_25,lateral_raise,reps,lateral raise/lateral raise_25.mp4,mp4,24.0,6.917,test,g0264,100.0
+lateral_raise_30,lateral_raise,reps,lateral raise/lateral raise_30.mp4,mp4,24.0,9.0,val,g0269,100.0
+lateral_raise_4,lateral_raise,reps,lateral raise/lateral raise_4.MOV,mov,29.974,15.28,val,g0276,99.8
+leg_extension_12,leg_extension,reps,leg extension/leg extension_12.mp4,mp4,23.976,4.213,test,g0285,100.0
+leg_extension_15,leg_extension,reps,leg extension/leg extension_15.mp4,mp4,23.976,7.132,val,g0288,93.0
+leg_extension_23,leg_extension,reps,leg extension/leg extension_23.mp4,mp4,30.0,5.9,val,g0297,96.0
+leg_extension_6,leg_extension,reps,leg extension/leg extension_6.MOV,mov,29.972,12.445,test,g0303,100.0
+leg_extension_7,leg_extension,reps,leg extension/leg extension_7.mp4,mp4,23.976,3.086,test,g0304,100.0
+leg_raises_10,leg_raises,reps,leg raises/leg raises_10.mp4,mp4,29.97,6.24,test,g0308,100.0
+leg_raises_13,leg_raises,reps,leg raises/leg raises_13.mp4,mp4,29.97,6.039,test,g0311,100.0
+leg_raises_21,leg_raises,reps,leg raises/leg raises_21.mp4,mp4,23.976,2.502,val,g0319,100.0
+leg_raises_3,leg_raises,reps,leg raises/leg raises_3.MOV,mov,29.975,12.043,test,g0320,100.0
+leg_raises_5,leg_raises,reps,leg raises/leg raises_5.MOV,mov,29.975,15.813,val,g0322,100.0
+plank_1,plank,hold,plank/plank_1.MOV,mov,29.973,36.833,test,g0326,97.2
+plank_5,plank,hold,plank/plank_5.mp4,mp4,25.0,30.08,val,g0329,100.0
+pull_up_19,pull_up,reps,pull Up/pull up_19.mp4,mp4,23.976,1.919,test,g0341,95.7
+pull_up_2,pull_up,reps,pull Up/pull up_2.mp4,mp4,29.97,14.481,test,g0342,100.0
+pull_up_20,pull_up,reps,pull Up/pull up_20.mp4,mp4,30.0,8.1,val,g0343,100.0
+pull_up_23,pull_up,reps,pull Up/pull up_23.mp4,mp4,29.97,4.204,test,g0346,100.0
+pull_up_26,pull_up,reps,pull Up/pull up_26.mp4,mp4,29.97,3.003,val,g0349,97.8
+push_up_18,push_up,reps,push-up/push-up_18.mp4,mp4,29.97,2.336,val,g0362,100.0
+push_up_28,push_up,reps,push-up/push-up_28.mp4,mp4,29.97,3.77,val,g0370,97.3
+push_up_37,push_up,reps,push-up/push-up_37.mp4,mp4,29.97,4.972,test,g0379,99.3
+push_up_54,push_up,reps,push-up/push-up_54.mp4,mp4,29.97,25.959,test,g0395,100.0
+push_up_56,push_up,reps,push-up/push-up_56.mp4,mp4,29.97,19.486,test,g0397,99.7
+romanian_deadlift_10,romanian_deadlift,reps,romanian deadlift/romanian deadlift_10.mp4,mp4,25.0,5.6,test,g0399,100.0
+romanian_deadlift_12,romanian_deadlift,reps,romanian deadlift/romanian deadlift_12.mp4,mp4,25.0,9.0,test,g0401,84.0
+romanian_deadlift_8,romanian_deadlift,reps,romanian deadlift/romanian deadlift_8.mp4,mp4,23.976,106.69,val,g0407,80.3
+romanian_deadlift_9,romanian_deadlift,reps,romanian deadlift/romanian deadlift_9.mp4,mp4,23.976,25.776,val,g0408,90.9
+russian_twist_3,russian_twist,reps,russian twist/russian twist_3.mp4,mp4,23.976,8.926,test,g0414,100.0
+russian_twist_4,russian_twist,reps,russian twist/russian twist_4.mp4,mp4,23.976,23.106,val,g0415,100.0
+russian_twist_7,russian_twist,reps,russian twist/russian twist_7.mp4,mp4,23.976,10.302,val,g0418,100.0
+russian_twist_9,russian_twist,reps,russian twist/russian twist_9.mp4,mp4,23.976,10.177,test,g0420,94.3
+shoulder_press_1,shoulder_press,reps,shoulder press/shoulder press_1.MOV,mov,29.974,17.115,test,g0421,100.0
+shoulder_press_14,shoulder_press,reps,shoulder press/shoulder press_14.mp4,mp4,29.97,6.106,val,g0426,100.0
+shoulder_press_16,shoulder_press,reps,shoulder press/shoulder press_16.mp4,mp4,30.0,10.4,test,g0428,100.0
+shoulder_press_2,shoulder_press,reps,shoulder press/shoulder press_2.MOV,mov,29.974,19.517,val,g0430,100.0
+shoulder_press_5,shoulder_press,reps,shoulder press/shoulder press_5.mp4,mp4,24.0,12.167,test,g0433,100.0
+squat_11,squat,reps,squat/squat_11.mp4,mp4,23.976,6.006,test,g0440,100.0
+squat_14,squat,reps,squat/squat_14.mp4,mp4,23.976,4.213,val,g0443,100.0
+squat_26,squat,reps,squat/squat_26.mp4,mp4,29.97,12.279,test,g0451,100.0
+squat_4,squat,reps,squat/squat_4.MOV,mov,29.973,20.018,val,g0456,100.0
+squat_7,squat,reps,squat/squat_7.mp4,mp4,25.0,2.32,val,g0459,100.0
+t_bar_row_1,t_bar_row,reps,t bar row/t bar row_1.MOV,mov,29.973,11.143,test,g0462,100.0
+t_bar_row_16,t_bar_row,reps,t bar row/t bar row_16.mp4,mp4,29.97,16.016,test,g0469,100.0
+t_bar_row_20,t_bar_row,reps,t bar row/t bar row_20.mp4,mp4,29.97,25.092,test,g0474,100.0
+t_bar_row_6,t_bar_row,reps,t bar row/t bar row_6.MOV,mov,29.974,13.478,val,g0479,100.0
+t_bar_row_9,t_bar_row,reps,t bar row/t bar row_9.mp4,mp4,23.976,7.299,val,g0481,100.0
+tricep_dips_10,tricep_dips,reps,tricep dips/tricep dips_10.mp4,mp4,29.97,14.915,val,g0483,100.0
+tricep_dips_13,tricep_dips,reps,tricep dips/tricep dips_13.mp4,mp4,25.0,4.4,test,g0486,100.0
+tricep_dips_14,tricep_dips,reps,tricep dips/tricep dips_14.mp4,mp4,25.0,6.48,val,g0487,100.0
+tricep_dips_17,tricep_dips,reps,tricep dips/tricep dips_17.mp4,mp4,30.0,22.3,test,g0490,99.9
+tricep_dips_9,tricep_dips,reps,tricep dips/tricep dips_9.mp4,mp4,29.97,13.013,test,g0501,95.4
+tricep_pushdown_15,tricep_pushdown,reps,tricep Pushdown/tricep pushdown_15.mp4,mp4,29.97,1.969,test,g0506,100.0
+tricep_pushdown_19,tricep_pushdown,reps,tricep Pushdown/tricep pushdown_19.mp4,mp4,29.97,3.237,test,g0510,100.0
+tricep_pushdown_29,tricep_pushdown,reps,tricep Pushdown/tricep pushdown_29.mp4,mp4,29.97,2.769,val,g0516,100.0
+tricep_pushdown_37,tricep_pushdown,reps,tricep Pushdown/tricep pushdown_37.mp4,mp4,29.97,1.368,test,g0522,100.0
+tricep_pushdown_48,tricep_pushdown,reps,tricep Pushdown/tricep pushdown_48.mp4,mp4,29.97,8.575,val,g0532,100.0
