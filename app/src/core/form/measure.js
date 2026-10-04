@@ -155,6 +155,9 @@ export function updateRepCheck(state, evaluation, ruleSet, repCompleted) {
 
 // ---------------------------------------------------------------- pose quality hints
 
+/** How many of the pose's landmarks are visible enough to use (0 when there is no pose). */
+export const countVisible = (pose, min = MIN_VISIBILITY) => (pose ?? []).filter((p) => (p?.visibility ?? 0) >= min).length;
+
 export const QUALITY = Object.freeze({
   NO_POSE: 'Tubuh tidak terdeteksi — mundur sedikit dari kamera',
   PARTIAL: 'Tubuh tidak terlihat penuh',

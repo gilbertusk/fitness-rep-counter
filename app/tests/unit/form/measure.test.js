@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { measureExercise } from '../../../src/core/form/measure.js';
+import { measureExercise, countVisible } from '../../../src/core/form/measure.js';
 import { EXERCISES } from '../../../src/core/exercises.js';
 
 const FRAME = { width: 100, height: 100 };
@@ -52,4 +52,11 @@ test('returns a null angle when the relevant joints are not visible', () => {
 
 test('returns a null angle when no pose is detected', () => {
   assert.equal(measureExercise(undefined, EXERCISES.squat, FRAME).angle, null);
+});
+
+test('countVisible counts the landmarks at or above the visibility floor', () => {
+  const pose = [{ visibility: 0.9 }, { visibility: 0.5 }, { visibility: 0.49 }, {}, null];
+  assert.equal(countVisible(pose), 2);
+  assert.equal(countVisible(pose, 0.95), 0);
+  assert.equal(countVisible(null), 0);
 });

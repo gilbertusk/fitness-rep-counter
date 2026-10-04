@@ -161,3 +161,25 @@ test('stopping closes the running set', () => {
   assert.equal(stopped.session.phase, PHASE.IDLE);
   assert.equal(stopped.session.sets.length, 1);
 });
+
+test('the view reports visible keypoints and how long the running set has lasted', () => {
+  const stream = poseStream({ segments: [{ reps: 2, repSeconds: 2 }], tailSeconds: 0 });
+  const { view } = play(chooseExercise(startWorkout(createWorkout(), 0), 'squat', 0), stream);
+  assert.ok(view.visibleKeypoints > 0 && view.visibleKeypoints <= 33, `${view.visibleKeypoints}`);
+  const last = stream.timestampsMs[stream.timestampsMs.length - 1];
+  assert.ok(view.setDurationMs > 0 && view.setDurationMs <= last, `${view.setDurationMs} ms`);
+  assert.equal(view.repsWithWarning, 0);
+  assert.equal(view.rest, null, 'no rest while a set is running');
+});
+
+test('while resting, the view carries the finished set and a growing rest time', () => {
+  const work = poseStream({ segments: [{ reps: 3, repSeconds: 2 }], restSeconds: 1, tailSeconds: 5 });
+  const { state, view } = play(chooseExercise(startWorkout(createWorkout(), 0), 'squat', 0), work);
+  assert.equal(view.phase, PHASE.RESTING);
+  assert.equal(view.rest.name, 'Squat');
+  assert.equal(view.rest.reps, 3);
+  assert.equal(view.setDurationMs, null);
+  const later = stepFrame(state, { frame: null, timeMs: work.timestampsMs.at(-1) + 2000, size: work.size }).view;
+  assert.ok(later.rest.sinceMs > view.rest.sinceMs && later.rest.sinceMs >= 2000, `${later.rest.sinceMs} ms`);
+  assert.equal(later.visibleKeypoints, 0, 'no pose, no keypoints');
+});
