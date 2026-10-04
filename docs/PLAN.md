@@ -56,6 +56,7 @@ Prinsip: **tiga dunia terpisah jelas** — `app/` (yang dipakai user), `ml/` (ya
 ```
 fitness-rep-counter/
 ├── README.md
+├── LICENSE                          # MIT
 ├── package.json                     # task runner JS: start, test, coverage:core, lint, test:e2e
 ├── package-lock.json                # dikunci npm (devDependencies untuk e2e)
 ├── .gitignore                       # mengabaikan data/, .venv/, node_modules/, dll.
@@ -466,8 +467,8 @@ diuji dengan skor sintetis — begitu `python -m repcount.export.onnx` dijalanka
   yang hanya dipakai di file-nya sendiri (`stopSource`, `prefersCpu`) dijadikan privat.
 - **Peta §4 diperbarui:** `eslint.config.js`, `.github/workflows/deploy-pages.yml`, isi `tools/benchmark/`,
   `tools/checkStructure.test.js`, dan `naivePeakCounter.js` yang sejak Tahap 3 belum tercantum.
-- **Belum diputuskan pemilik:** lisensi kode (file `LICENSE` di root perlu ditambahkan ke peta §4) dan
-  lokasi GIF demo (≤ 5 MB; usul `docs/demo.gif`).
+- **Belum diputuskan pemilik:** ~~lisensi kode~~ (2026-10-04: pemilik memilih **MIT**; `LICENSE` ditambahkan
+  ke root, peta §4, dan `checkStructure.js`) dan lokasi GIF demo (≤ 5 MB; usul `docs/demo.gif`).
 - **Test:** 263 node:test + 246 pytest lulus; coverage `app/src/core/` 100% baris, 97,5% cabang,
   99,5% fungsi; `ruff`, ESLint, dan cek struktur bersih.
 

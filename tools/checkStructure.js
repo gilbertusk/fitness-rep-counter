@@ -17,7 +17,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const ROOT_ENTRIES = Object.freeze([
-  '.github', '.gitignore', 'README.md', 'package.json', 'package-lock.json', 'eslint.config.js',
+  '.github', '.gitignore', 'README.md', 'LICENSE', 'package.json', 'package-lock.json', 'eslint.config.js',
   'app', 'ml', 'tools', 'labels', 'reports', 'docs',
 ]);
 export const MAX_LINES = 400;

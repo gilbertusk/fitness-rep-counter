@@ -165,7 +165,7 @@ ESLint, pytest + ruff (termasuk parity fitur), cek struktur, dan smoke test Play
   oleh ziya07 di Kaggle (CC0). Video dan keypoint turunannya **tidak** didistribusikan di repo ini.
 - **Model pose & library:** [MediaPipe Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker)
   (Google, Apache-2.0); [ONNX Runtime Web](https://onnxruntime.ai/) (Microsoft, MIT).
-- **Lisensi kode:** belum ditentukan oleh pemilik proyek.
+- **Lisensi kode:** [MIT](LICENSE).
 - **Model card:** [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) — termasuk penggunaan yang tidak disarankan
   (bukan alat medis atau fisioterapi).
 - **Privasi:** semua inferensi berjalan di browser. `app/tests/e2e/smoke.spec.js` mencatat **setiap**
