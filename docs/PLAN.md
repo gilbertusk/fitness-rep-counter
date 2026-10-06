@@ -531,3 +531,16 @@ README terisi setelah Tahap 1 (training) dan Tahap 2–3 (label → MAE/OBO).
   PowerShell, pengujian/CI/deploy, struktur, keputusan, keterbatasan, status, privasi, kredit) dengan
   tangkapan layar app asli di `docs/images/` (folder baru di peta §4).
 - **Yang tetap butuh pemilik:** label repetisi (→ MAE/OBO, Tahap 2–3), GIF demo, benchmark laptop/HP.
+
+### 2026-10-06 — Label repetisi: dua koreksi terbuka sebelum evaluasi test
+
+- **Russian twist dikonversi, bukan dilabel ulang:** pelabel menandai setiap sentuhan sisi (kiri, kanan,
+  …), sedangkan definisi `labels/README.md` (ditetapkan sebelum melabel) adalah kiri + kanan = 1 rep.
+  Atas permintaan pemilik, tanda ke-2, ke-4, … dari tanda manusia itu dipertahankan (24→12, 13→6, 8→4,
+  8→4); setengah siklus terakhir `russian_twist_7` tidak dihitung, sesuai aturan rep parsial. Tidak ada
+  tanda baru yang dibuat. Ditemukan di val karena prediksi tepat setengah label dengan presisi 1,0; tanda
+  per sisi asli tetap ada di riwayat git (commit d8b15b5). Catatan di tiap baris menjelaskan konversinya.
+- **Enam video ambigu tanpa alasan:** diberi catatan yang menyatakan alasannya tidak dicatat pelabel —
+  bukan alasan karangan. Video itu tetap dilaporkan terpisah oleh harness (dengan & tanpa ambigu).
+- **Parameter penghitung dikunci** (default `genericCounter.js`, tanpa `--grid`) sebelum val ulang dan
+  test dijalankan, jadi tidak ada keputusan yang diambil dari test.
